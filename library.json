@@ -1,6 +1,6 @@
 {
   "name": "HaierProtocol",
-  "version": "0.9.2",
+  "version": "0.9.3",
   "description": " A library to control Haier AC using UART port.",
   "keywords": "haier, air-conditioner, uart, serial",
   "repository":
@@ -9,16 +9,22 @@
     "url": "https://github.com/paveldn/HaierProtocol.git"
   },
   "authors":
-  [
-    {
-      "name": "Pavlo Dudnytskyi",
-      "email": "paveldudn@gmail.com",
-      "url": "https://www.linkedin.com/in/pavel-dudnytskyi-15191118/"
-    }
-  ],
-  "license": "MIT",
-  "dependencies": {
+  {
+    "name": "Pavlo Dudnytskyi",
+    "email": "paveldudn@gmail.com",
+    "url": "https://www.linkedin.com/in/pavel-dudnytskyi-15191118/"
   },
+  "export":
+  {
+    "include":
+    [
+      "include/*.h",
+      "include/*/*.h",
+      "src/*.cpp",
+      "src/*/*.cpp"
+    ]
+  },
+  "license": "MIT",
   "frameworks": "*",
   "platforms": "*"
 }
