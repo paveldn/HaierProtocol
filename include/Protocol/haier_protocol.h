@@ -6,8 +6,8 @@
 #include <functional>
 #include <map>
 #include <queue>
-#include "protocol_transport.h"
-#include "haier_message.h"
+#include "Transport\protocol_transport.h"
+#include "Protocol\haier_message.h"
 
 namespace HaierProtocol
 {

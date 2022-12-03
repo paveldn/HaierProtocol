@@ -2,11 +2,11 @@
 #define PROTOCOL_TRANSPORT_H
 #include <stdint.h>
 #include <chrono>
-#include "haier_log.h"
-#include "circular_buffer.h"
-#include "haier_frame.h"
-#include "protocol_stream.h"
 #include <queue>
+#include "Utils\haier_log.h"
+#include "Utils\circular_buffer.h"
+#include "Utils\protocol_stream.h"
+#include "Transport\haier_frame.h"
 
 namespace HaierProtocol
 {
