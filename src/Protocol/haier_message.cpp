@@ -1,5 +1,5 @@
-﻿#include "haier_protocol.h"
-#include <memory>
+﻿#include <cstring>
+#include "Protocol/haier_message.h"
 
 #define TAG "haier.protocol"
 
