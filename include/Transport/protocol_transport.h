@@ -3,10 +3,10 @@
 #include <stdint.h>
 #include <chrono>
 #include <queue>
-#include "Utils\haier_log.h"
-#include "Utils\circular_buffer.h"
-#include "Utils\protocol_stream.h"
-#include "Transport\haier_frame.h"
+#include "Utils/haier_log.h"
+#include "Utils/circular_buffer.h"
+#include "Utils/protocol_stream.h"
+#include "haier_frame.h"
 
 namespace HaierProtocol
 {
