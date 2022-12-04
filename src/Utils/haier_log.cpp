@@ -27,10 +27,10 @@ char msg_buffer[BUFFER_SIZE];
 
 LogHandler globalLogHandler = nullptr;
 
-size_t logHaier(LogLevel level, const char* tag, const char* format, ...)
+size_t logHaier(HaierLogLevel level, const char* tag, const char* format, ...)
 {
 	size_t res = 0;
-	if ((globalLogHandler != nullptr) && (level != LogLevel::llNone))
+	if ((globalLogHandler != nullptr) && (level != HaierLogLevel::llNone))
 	{
 		va_list args;
 		va_start(args, format);
