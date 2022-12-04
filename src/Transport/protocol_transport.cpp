@@ -45,16 +45,22 @@ size_t TransportLevelHandler::readData()
 	size_t bytes_read = 0;
 	uint8_t val;
 	size_t count = mStream.available();
+#if (HAIER_LOG_LEVEL > 4)
 	std::stringstream outBuf;
+#endif
 	while ((bytes_read < count) && (mStream.read_array(&val, 1) > 0))
 	{
+#if (HAIER_LOG_LEVEL > 4)
 		outBuf << std::setfill('0') << std::setw(2) << std::uppercase << std::hex << (int)val << ' ';
+#endif
 		if (mBuffer.push(val) == 0)
 			break;
 		bytes_read++;
 	}
+#if (HAIER_LOG_LEVEL > 4)
 	if (bytes_read > 0)
 		HAIER_LOGV(TAG, "Received data: %s", outBuf.str().c_str());
+#endif
 	return bytes_read;
 }
 

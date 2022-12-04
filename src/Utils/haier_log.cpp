@@ -1,4 +1,5 @@
 #include <cstdarg>
+#include <stdio.h>
 #include "Utils/haier_log.h"
 
 #define BUFFER_SIZE	4096
