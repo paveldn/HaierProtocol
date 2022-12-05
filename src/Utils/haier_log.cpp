@@ -23,8 +23,7 @@ std::string buf2hex(const uint8_t* message, size_t size)
 namespace HaierProtocol
 {
 
-// Will need to use locks in the future for multi-threading support
-char msg_buffer[BUFFER_SIZE];
+thread_local char msg_buffer[BUFFER_SIZE];
 
 LogHandler globalLogHandler = nullptr;
 
