@@ -23,7 +23,7 @@ std::string buf2hex(const uint8_t* message, size_t size)
 namespace HaierProtocol
 {
 
-thread_local char msg_buffer[BUFFER_SIZE];
+char msg_buffer[BUFFER_SIZE];
 
 LogHandler globalLogHandler = nullptr;
 

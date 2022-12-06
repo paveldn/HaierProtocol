@@ -1,6 +1,6 @@
 {
   "name": "HaierProtocol",
-  "version": "0.9.6",
+  "version": "0.9.7",
   "description": " A library to control Haier AC using UART port.",
   "keywords": "haier, air-conditioner, uart, serial",
   "repository":
