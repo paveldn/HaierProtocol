@@ -114,7 +114,7 @@ void TransportLevelHandler::processData()
 						FrameError err;
 						mCurrentFrame.parseBuffer(headerBuffer.get(), mPos + 1, err);
 						if (err == FrameError::feHeaderOnly)
-							HAIER_LOGV(TAG, "Found frame header: type %d", mCurrentFrame.getFrameType());
+							HAIER_LOGV(TAG, "Found frame header: type %02X", mCurrentFrame.getFrameType());
 						else
 						{
 							HAIER_LOGW(TAG, "Frame parsing error: %d", err);
@@ -136,7 +136,7 @@ void TransportLevelHandler::processData()
 					mCurrentFrame.parseBuffer(tmpBuf.get(), mPos + 1, err);
 					if (err == FrameError::feCompleteFrame)
 					{
-						HAIER_LOGD(TAG, "Frame found: type %d, data: %s", mCurrentFrame.getFrameType(), buf2hex(tmpBuf.get(), mCurrentFrame.getDataSize()).c_str());
+						HAIER_LOGD(TAG, "Frame found: type %02X, data: %s", mCurrentFrame.getFrameType(), buf2hex(tmpBuf.get(), mCurrentFrame.getDataSize()).c_str());
 						mIncommingQueue.push(TimestampedFrame{ std::move(mCurrentFrame), mFrameStart });
 					}
 					else

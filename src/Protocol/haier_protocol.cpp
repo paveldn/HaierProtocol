@@ -147,7 +147,7 @@ bool ProtocolHandler::writeMessage(const HaierMessage& message, bool useCrc)
 		isSuccess = (message.fillBuffer(buffer.get(), bufSize) > 0) && (mTransport.sendData(message.getFrameType(), buffer.get(), bufSize, useCrc) > 0);
 	}
 	if (!isSuccess)
-		HAIER_LOGE(TAG, "Error sending message : % d", message.getFrameType());
+		HAIER_LOGE(TAG, "Error sending message : %02X", message.getFrameType());
 	mCooldownTimeout = std::chrono::steady_clock::now() + MESSAGE_COOLDOWN_INTERVAL;
 	return isSuccess;
 }
