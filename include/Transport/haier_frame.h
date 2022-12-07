@@ -6,6 +6,7 @@
 #define MAX_FRAME_SIZE			0xF1
 #define FRAME_HEADER_SIZE		0x0A
 #define SEPARATOR_BYTE			0xFF
+#define SEPARATOR_POST_BYTE		0x55
 #define FRAME_SEPARATORS_COUNT	0x02
 #define PURE_HEADER_SIZE		((FRAME_HEADER_SIZE) - (FRAME_SEPARATORS_COUNT))
 
@@ -62,6 +63,7 @@ private:
 	uint16_t			mCrc;
 	uint8_t*			mData;
 	FrameStatus			mStatus;
+	uint8_t				mAdditionalBytes;
 	uint8_t				getHeaderByte(uint8_t pos) const;
 };
 

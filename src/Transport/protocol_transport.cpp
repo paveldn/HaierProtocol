@@ -48,13 +48,16 @@ size_t TransportLevelHandler::readData()
 #if (HAIER_LOG_LEVEL > 4)
 	std::stringstream outBuf;
 #endif
+	bool prev_separator = false;
 	while ((bytes_read < count) && (mStream.read_array(&val, 1) > 0))
 	{
 #if (HAIER_LOG_LEVEL > 4)
 		outBuf << std::setfill('0') << std::setw(2) << std::uppercase << std::hex << (int)val << ' ';
 #endif
-		if (mBuffer.push(val) == 0)
+		// IF there is 0xFF 0x55 replace it with 0xFF
+		if (((!prev_separator) || (val != SEPARATOR_POST_BYTE)) && (mBuffer.push(val) == 0))
 			break;
+		prev_separator = val == SEPARATOR_BYTE;
 		bytes_read++;
 	}
 #if (HAIER_LOG_LEVEL > 4)

@@ -98,7 +98,8 @@ HaierProtocol::HaierFrame::HaierFrame() noexcept :
 	mChecksum(0),
 	mCrc(INITIAL_CRC),
 	mData(nullptr),
-	mStatus(FrameStatus::fsEmpty)
+	mStatus(FrameStatus::fsEmpty),
+	mAdditionalBytes(0)
 {
 }
 
@@ -109,13 +110,16 @@ HaierFrame::HaierFrame(uint8_t frameType, const uint8_t* const data, uint8_t dat
 	mChecksum(0),
 	mCrc(INITIAL_CRC),
 	mData(nullptr),
-	mStatus(FrameStatus::fsComplete)
+	mStatus(FrameStatus::fsComplete),
+	mAdditionalBytes(0)
 {
 	for (uint8_t pos = HEADER_SIZE_POS; pos < FRAME_HEADER_SIZE; pos++)
 	{
 		uint8_t hByte = getHeaderByte(pos);
+		if (hByte == SEPARATOR_BYTE)
+			++mAdditionalBytes;
 		if (hByte > 0)
-			mChecksum = checksum(&hByte, 1, mChecksum);
+			mChecksum += hByte;
 		if (mUseCrc)
 			mCrc = crc16(hByte, mCrc);
 	}
@@ -123,10 +127,17 @@ HaierFrame::HaierFrame(uint8_t frameType, const uint8_t* const data, uint8_t dat
 	{
 		mData = new uint8_t[mDataSize];
 		memcpy(mData, data, mDataSize);
-		mChecksum = checksum(mData, mDataSize, mChecksum);
-		if (mUseCrc)
-			mCrc = crc16(mData, mDataSize, mCrc);
+		for (size_t i = 0; i < mDataSize; i++)
+		{
+			if (mData[i] > 0)
+				mChecksum += mData[i];
+			if (mData[i] == SEPARATOR_BYTE)
+				++mAdditionalBytes;
+			if (mUseCrc)
+				mCrc = crc16(mData[i], mCrc);
+		}
 	}
+	mChecksum += mAdditionalBytes * SEPARATOR_POST_BYTE;
 }
 
 HaierFrame::HaierFrame(HaierFrame&& source) noexcept :
@@ -136,7 +147,8 @@ HaierFrame::HaierFrame(HaierFrame&& source) noexcept :
 	mChecksum(source.mChecksum),
 	mCrc(source.mCrc),
 	mData(source.mData),
-	mStatus(source.mStatus)
+	mStatus(source.mStatus),
+	mAdditionalBytes(source.mAdditionalBytes)
 {
 	source.mData = nullptr;
 }
@@ -163,6 +175,7 @@ HaierFrame& HaierFrame::operator=(HaierFrame&& source) noexcept
 		if (mData != nullptr)
 			delete[] mData;
 		mData = source.mData;
+		mAdditionalBytes = source.mAdditionalBytes;
 		source.mData = nullptr;
 	}
 	return *this;
@@ -209,6 +222,7 @@ size_t HaierFrame::parseBuffer(const uint8_t* const buffer, size_t size, FrameEr
 				break;
 			case HEADER_FRAME_TYPE_POS:
 				frameType = buffer[lPos];
+				mAdditionalBytes = (frameType == SEPARATOR_BYTE) ? 1 : 0;
 				break;
 			}
 			chk = checksum(buffer + lPos, 1, chk);
@@ -249,6 +263,9 @@ size_t HaierFrame::parseBuffer(const uint8_t* const buffer, size_t size, FrameEr
 		}
 		size_t rPos = minSize - 1;
 		uint16_t crc = INITIAL_CRC;
+		for (size_t i = 0; i < mDataSize; i++)
+			if (buffer[i] == SEPARATOR_BYTE)
+				++mAdditionalBytes;
 		if (mUseCrc)
 		{
 			uint16_t frameCrc = buffer[rPos] + (buffer[rPos - 1] << 8);
@@ -260,7 +277,7 @@ size_t HaierFrame::parseBuffer(const uint8_t* const buffer, size_t size, FrameEr
 			}
 			rPos -= 2;
 		}
-		uint8_t chk = checksum(buffer + lPos, mDataSize, mChecksum);
+		uint8_t chk = checksum(buffer + lPos, mDataSize, mChecksum) + ((mAdditionalBytes * SEPARATOR_POST_BYTE) & 0xFF);
 		if (chk != buffer[rPos])
 		{
 			err = FrameError::feChecksumWrong;
@@ -294,31 +311,64 @@ void HaierFrame::reset()
 	mCrc = INITIAL_CRC;
 	mData = nullptr;
 	mStatus = FrameStatus::fsEmpty;
+	mAdditionalBytes = 0;
 }
 
 size_t HaierFrame::getBufferSize() const
 {
 	// FF FF <header> <data> <checksum> [CRC]
-	return FRAME_HEADER_SIZE + mDataSize + (mUseCrc ? 3 : 1);
+	size_t result = FRAME_HEADER_SIZE + mDataSize + mAdditionalBytes;
+	if (mChecksum == SEPARATOR_BYTE)
+		result += 2;
+	else
+		result += 1;
+	if (mUseCrc)
+	{
+		result += 2;
+		if ((mCrc & 0xFF) == SEPARATOR_BYTE)
+			++result;
+		if (((mCrc >> 8) & 0xFF) == SEPARATOR_BYTE)
+			++result;
+	}
+	return  result;
 }
 
 size_t HaierFrame::fillBuffer(uint8_t* const buffer, size_t limit) const
 {
+#define SET_WITH_POST_BYTE(value, dst, position)	do {\
+				(dst)[(position)++] = (value); \
+				if ((value) == SEPARATOR_BYTE) \
+				{ \
+					(dst)[(position)++] = SEPARATOR_POST_BYTE; \
+				} \
+			} while (0)
 	size_t sz = getBufferSize();
 	if (sz > limit)
 		return 0;
 	uint8_t pos = 0;
-	for (; pos < FRAME_HEADER_SIZE; pos++)
-		buffer[pos] = getHeaderByte(pos);
-	memcpy(buffer + pos, mData, mDataSize);
-	pos = sz - 1;
+	for (size_t i = 0; i < FRAME_SEPARATORS_COUNT; i++)
+		buffer[pos++] = getHeaderByte(i);
+	for (size_t i = FRAME_SEPARATORS_COUNT; i < FRAME_HEADER_SIZE; i++)
+	{
+
+		uint8_t val = getHeaderByte(i);
+		SET_WITH_POST_BYTE(val, buffer, pos);
+	}
+	for (size_t i = 0; i < mDataSize; i++)
+	{
+		uint8_t val = mData[i];
+		SET_WITH_POST_BYTE(val, buffer, pos);
+	}
+	SET_WITH_POST_BYTE(mChecksum, buffer, pos);
 	if (mUseCrc)
 	{
-		buffer[pos--] = mCrc & 0xFF;
-		buffer[pos--] = mCrc >> 8;
+		uint8_t val = (mCrc >> 8) & 0xFF;
+		SET_WITH_POST_BYTE(val, buffer, pos);
+		val = mCrc & 0xFF;
+		SET_WITH_POST_BYTE(val, buffer, pos);
 	}
-	buffer[pos] = mChecksum;
 	return sz;
+#undef SET_WITH_POST_BYTE
 }
 
 }
