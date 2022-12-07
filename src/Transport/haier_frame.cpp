@@ -45,7 +45,7 @@ static const uint16_t crc_table[] = {
 	};
 
 
-inline uint16_t crc16(const uint8_t const data, uint16_t crc = 0)
+inline uint16_t crc16(const uint8_t data, uint16_t crc = 0)
 {
 	return (crc >> 8) ^ crc_table[(crc ^ data) & 0xFF];
 }
