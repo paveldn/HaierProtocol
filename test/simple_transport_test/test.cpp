@@ -1,57 +1,9 @@
 #include <stdint.h>
-#include <iostream>
-#ifdef _WIN32
-#include <windows.h>
-#endif
 #include "Utils/circular_buffer.h"
 #include "Utils/protocol_stream.h"
 #include "Utils/haier_log.h"
 #include "Transport/protocol_transport.h"
-
-#define BUFFER_SIZE	4096
-
-
-void console_logger(HaierProtocol::HaierLogLevel level, const char* tag, const char* format, ...)
-{
-#ifdef _WIN32
-    constexpr uint16_t ll2color[] =
-    {
-        0x07,       // 0llNone
-        0x0C,       // llError
-        0x0E,       // llWarning
-        0x0F,       // llInfo
-        0x07,       // not used
-        0x07,       // llDebug
-        0x08,       // llVerbose
-    };
-#endif
-    constexpr char ll2tag[] =
-    {
-        '#',        // llNone
-        'E',        // llError
-        'W',        // llWarning
-        'I',        // llInfo
-        '#',        // not used
-        'D',        // llDebug
-        'V',        // llVerbose
-
-    };
-    static char msg_buffer[BUFFER_SIZE];
-    if (level == HaierProtocol::HaierLogLevel::llNone)
-        return;
-    va_list args;
-    va_start(args, format);
-    vsnprintf(msg_buffer, BUFFER_SIZE, format, args);
-    va_end(args);
-#ifdef _WIN32
-    static HANDLE hConsole = GetStdHandle(STD_OUTPUT_HANDLE);
-    SetConsoleTextAttribute(hConsole, ll2color[(uint8_t)level]);
-#endif
-    std::cout << "[" << ll2tag[(uint8_t)level] << "][" << tag << "]: " << msg_buffer << std::endl;
-#ifdef _WIN32
-    SetConsoleTextAttribute(hConsole, 0x07);
-#endif
-}
+#include "console_log.h"
 
 class TestStream : public HaierProtocol::ProtocolStream
 {
@@ -95,6 +47,14 @@ int main()
     TestStream stream;
     HaierProtocol::TimestampedFrame tsframe;
     HaierProtocol::TransportLevelHandler transport(stream);
+    {
+        // No 0xFF 0xFF at the packet beginning, should drop whole frame
+        uint8_t buffer[] = { 0x0E, 0x40, 0x00, 0x00, 0x00, 0x00, 0x00, 0xFF, 0x55, 0xFF, 0x55, 0xFF, 0x55, 0x05, 0xFF, 0x55, 0xFF, 0x55, 0x08, 0xFF, 0x55, 0xD0, 0x8E, 0xFF};
+        stream.addBuffer(buffer, sizeof(buffer));
+    }
+    transport.readData();
+    transport.processData();
+    transport.pop(tsframe);
     {
         uint8_t buffer[] = { 0xFF, 0xFF, 0x2A, 0x40, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0x6D, 0x01, 0x02, 0x06, 0x25, 0x00, 0x02, 0x00, 0x00, 0x00, 0x00, 0x00, 0x27, 0x00, 0x44, 0x00, 0x00, 0x03, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x77, 0xD1, 0x7B};
         stream.addBuffer(buffer, sizeof(buffer));

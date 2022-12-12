@@ -1,8 +1,8 @@
 cmake_minimum_required(VERSION 3.19)
 
-set(TEST_NAME "simple_transport_test")
+set(TEST_NAME "hon_simulator")
 
-project(${TEST_NAME} VERSION "1.0.0" DESCRIPTION "Simple transport level test")
+project(${TEST_NAME} VERSION "1.0.0" DESCRIPTION "hOn AC simulator")
 
 set(LIB_ROOT "${CMAKE_CURRENT_SOURCE_DIR}/../..")
 
@@ -17,6 +17,6 @@ list(APPEND SOURCE_FILES "${LIB_ROOT}/src/Transport/haier_frame.cpp")
 list(APPEND SOURCE_FILES "${LIB_ROOT}/src/Transport/protocol_transport.cpp")
 list(APPEND SOURCE_FILES "${LIB_ROOT}/src/Utils/haier_log.cpp")
 list(APPEND SOURCE_FILES "${CMAKE_CURRENT_SOURCE_DIR}/../utils/console_log.cpp")
-list(APPEND SOURCE_FILES "${CMAKE_CURRENT_SOURCE_DIR}/test.cpp")
+list(APPEND SOURCE_FILES "${CMAKE_CURRENT_SOURCE_DIR}/main.cpp")
 
 add_executable("${TEST_NAME}" "${SOURCE_FILES}")
