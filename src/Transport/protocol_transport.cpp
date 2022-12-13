@@ -14,7 +14,11 @@ TransportLevelHandler::TransportLevelHandler(TransportLevelHandler&& source) noe
 	mStream(source.mStream),
 	mBuffer(std::move(source.mBuffer)),
 	mPos(source.mPos),
-	mCurrentFrame(std::move(source.mCurrentFrame))
+	mSepCount(source.mSepCount),
+	mFrameStartFound(source.mFrameStartFound),
+	mFrameStart(source.mFrameStart),
+	mCurrentFrame(std::move(source.mCurrentFrame)),
+	mIncommingQueue(std::move(source.mIncommingQueue))
 {
 }
 
@@ -22,6 +26,8 @@ TransportLevelHandler::TransportLevelHandler(ProtocolStream& stream, size_t buff
 	mStream(stream),
 	mBuffer(bufferSize),
 	mPos(0),
+	mSepCount(0),
+	mFrameStartFound(false),
 	mCurrentFrame()
 {
 }
@@ -48,16 +54,14 @@ size_t TransportLevelHandler::readData()
 #if (HAIER_LOG_LEVEL > 4)
 	std::stringstream outBuf;
 #endif
-	bool prev_separator = false;
 	while ((bytes_read < count) && (mStream.read_array(&val, 1) > 0))
 	{
 #if (HAIER_LOG_LEVEL > 4)
 		outBuf << std::setfill('0') << std::setw(2) << std::uppercase << std::hex << (int)val << ' ';
 #endif
 		// IF there is 0xFF 0x55 replace it with 0xFF
-		if (((!prev_separator) || (val != SEPARATOR_POST_BYTE)) && (mBuffer.push(val) == 0))
+		if (mBuffer.push(val) == 0)
 			break;
-		prev_separator = val == SEPARATOR_BYTE;
 		bytes_read++;
 	}
 #if (HAIER_LOG_LEVEL > 4)
@@ -78,6 +82,8 @@ void TransportLevelHandler::processData()
 			HAIER_LOGW(TAG, "Frame timeout!");
 			dropBytes(mPos);
 			mPos = 0;
+			mSepCount = 0;
+			mFrameStartFound = false;
 			mCurrentFrame.reset();
 		}
 	}
@@ -87,23 +93,19 @@ void TransportLevelHandler::processData()
 		int bytesToDrop = 0;
 		while (mPos < bufSize)
 		{
-			switch (mCurrentFrame.getStatus())
-			{
-			case FrameStatus::fsEmpty:
-			{
-				if (mPos - bytesToDrop + 1 == FRAME_HEADER_SIZE)
+			// Searching for the begging of packet
+			if (!mFrameStartFound)
+			{ 
+				if (mBuffer[mPos] == SEPARATOR_BYTE)
 				{
-					size_t sepCounter = 0;
-					for (; sepCounter < FRAME_SEPARATORS_COUNT; ++sepCounter)
-						if (mBuffer[bytesToDrop + sepCounter] != SEPARATOR_BYTE)
-							break;
-					if (sepCounter < FRAME_SEPARATORS_COUNT)
-						bytesToDrop += (int)(sepCounter + 1);
-					else if (mBuffer[bytesToDrop + FRAME_SEPARATORS_COUNT] == SEPARATOR_BYTE)
-						++bytesToDrop;
-					else
+					if (mPos + 1 - bytesToDrop > FRAME_SEPARATORS_COUNT)
+						bytesToDrop = mPos +1 - FRAME_SEPARATORS_COUNT;
+				}
+				else
+				{
+					if (mPos - bytesToDrop == FRAME_SEPARATORS_COUNT)
 					{
-						// Found packet start
+						mFrameStartFound = true;
 						if (bytesToDrop > 0)
 						{
 							// Dropping garbage
@@ -112,48 +114,88 @@ void TransportLevelHandler::processData()
 							mPos -= bytesToDrop;
 							bytesToDrop = 0;
 						}
-						std::unique_ptr<uint8_t[]> headerBuffer(new uint8_t[mPos + 1]);
-						mBuffer.pop(headerBuffer.get(), mPos + 1);
-						FrameError err;
-						mCurrentFrame.parseBuffer(headerBuffer.get(), mPos + 1, err);
-						if (err == FrameError::feHeaderOnly)
-							HAIER_LOGV(TAG, "Found frame header: type %02X", mCurrentFrame.getFrameType());
-						else
-						{
-							HAIER_LOGW(TAG, "Frame parsing error: %d", err);
-							mCurrentFrame.reset();
-						}
-						mPos = 0;
-						bufSize = mBuffer.getAvailable();
-						continue;
-					}
-				}
-			}
-			break;
-			case FrameStatus::fsHeaderOnly:
-				if (mPos + 1 == mCurrentFrame.getDataSize() + (mCurrentFrame.getUseCrc() ? 3 : 1))
-				{
-					std::unique_ptr<uint8_t[]> tmpBuf(new uint8_t[mPos + 1]);
-					mBuffer.pop(tmpBuf.get(), mPos + 1);
-					FrameError err;
-					mCurrentFrame.parseBuffer(tmpBuf.get(), mPos + 1, err);
-					if (err == FrameError::feCompleteFrame)
-					{
-						HAIER_LOGD(TAG, "Frame found: type %02X, data: %s", mCurrentFrame.getFrameType(), buf2hex(tmpBuf.get(), mCurrentFrame.getDataSize()).c_str());
-						mIncommingQueue.push(TimestampedFrame{ std::move(mCurrentFrame), mFrameStart });
 					}
 					else
-						HAIER_LOGW(TAG, "Frame parsing error: %d", err);
+						bytesToDrop = mPos + 1;
+				}
+			}
+			else
+			{
+				if (mBuffer[mPos] == SEPARATOR_BYTE)
+					++mSepCount;
+				switch (mCurrentFrame.getStatus())
+				{
+					case FrameStatus::fsEmpty:
+					{
+						if (mPos + 1 - mSepCount == FRAME_HEADER_SIZE)
+						{
+							std::unique_ptr<uint8_t[]> headerBuffer(new uint8_t[FRAME_HEADER_SIZE]);
+							size_t hPos = 0;
+							size_t bPos = 0;
+							for (; bPos < FRAME_SEPARATORS_COUNT; ++bPos)
+								headerBuffer.get()[hPos++] = mBuffer[bPos];
+							headerBuffer.get()[hPos++] = mBuffer[bPos++];
+							while (bPos <= mPos)
+							{
+								if (mBuffer[bPos - 1] != SEPARATOR_BYTE)
+									headerBuffer.get()[hPos++] = mBuffer[bPos];
+								++bPos;
+							}
+							mBuffer.drop(bPos);
+							bufSize -= mPos + 1;
+							mPos = 0;
+							mSepCount = 0;
+							FrameError err;
+							mCurrentFrame.parseBuffer(headerBuffer.get(), hPos, err);
+							if (err == FrameError::feHeaderOnly)
+								HAIER_LOGV(TAG, "Found frame header: type %02X", mCurrentFrame.getFrameType());
+							else
+							{
+								HAIER_LOGW(TAG, "Frame parsing error: %d", err);
+								mCurrentFrame.reset();
+								mFrameStartFound = false;
+							}
+							continue;
+						}
+					}
+					break;
+				case FrameStatus::fsHeaderOnly:
+					if (mPos + 1 - mSepCount == mCurrentFrame.getDataSize() + (mCurrentFrame.getUseCrc() ? 3 : 1))
+					{
+						std::unique_ptr<uint8_t[]> tmpBuf(new uint8_t[mPos + 1 - mSepCount]);
+						size_t hPos = 0;
+						size_t bPos = 0;
+						while (bPos <= mPos)
+						{
+							if ((bPos == 0) || (mBuffer[bPos - 1] != SEPARATOR_BYTE))
+								tmpBuf.get()[hPos++] = mBuffer[bPos];
+							++bPos;
+						}
+						mBuffer.drop(bPos);
+						FrameError err;
+						mCurrentFrame.parseBuffer(tmpBuf.get(), hPos, err);
+						if (err == FrameError::feCompleteFrame)
+						{
+							HAIER_LOGD(TAG, "Frame found: type %02X, data: %s", mCurrentFrame.getFrameType(), buf2hex(tmpBuf.get(), mCurrentFrame.getDataSize()).c_str());
+							mIncommingQueue.push(TimestampedFrame{ std::move(mCurrentFrame), mFrameStart });
+						}
+						else
+							HAIER_LOGW(TAG, "Frame parsing error: %d", err);
+						mCurrentFrame.reset();
+						mPos = 0;
+						mSepCount = 0;
+						bufSize = mBuffer.getAvailable();
+						mFrameStartFound = false;
+						continue;
+					}
+					break;
+					// No need for separate FrameStatus::fsComplete
+				default:
+					// Shouldn't get here!
 					mCurrentFrame.reset();
-					mPos = 0;
-					bufSize = mBuffer.getAvailable();
+					mFrameStartFound = false;
 					continue;
 				}
-				break;
-			case FrameStatus::fsComplete:
-				// Shouldn't get here!
-				mCurrentFrame.reset();
-				continue;
 			}
 			mPos++;
 		}
@@ -174,6 +216,8 @@ void TransportLevelHandler::resetProtocol() noexcept
 		bytesToDrop = mPos;
 	dropBytes(bytesToDrop);
 	mPos = 0;
+	mSepCount = 0;
+	mFrameStartFound = false;
 }
 
  bool TransportLevelHandler::pop(TimestampedFrame& tframe)
@@ -203,6 +247,8 @@ void TransportLevelHandler::clear()
 	HAIER_LOGV(TAG, "Clearing buffer, data size: %d", mBuffer.getAvailable());
 	mBuffer.clear();
 	mPos = 0;
+	mSepCount = 0;
+	mFrameStartFound = false;
 	mCurrentFrame.reset();
 }
 

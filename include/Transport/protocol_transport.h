@@ -40,6 +40,8 @@ private:
 	ProtocolStream&					mStream;
 	CircularBuffer<uint8_t>			mBuffer;
 	size_t							mPos;
+	size_t							mSepCount;
+	bool							mFrameStartFound;
 	HaierFrame						mCurrentFrame;
 	std::chrono::steady_clock::time_point	mFrameStart;
 	std::queue<TimestampedFrame>	mIncommingQueue;
