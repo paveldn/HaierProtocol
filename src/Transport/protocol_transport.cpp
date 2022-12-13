@@ -16,8 +16,8 @@ TransportLevelHandler::TransportLevelHandler(TransportLevelHandler&& source) noe
 	mPos(source.mPos),
 	mSepCount(source.mSepCount),
 	mFrameStartFound(source.mFrameStartFound),
-	mFrameStart(source.mFrameStart),
 	mCurrentFrame(std::move(source.mCurrentFrame)),
+	mFrameStart(source.mFrameStart),
 	mIncommingQueue(std::move(source.mIncommingQueue))
 {
 }
