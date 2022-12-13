@@ -31,6 +31,7 @@ enum class FrameError
 	feDataSizeWrong,
 	feChecksumWrong,
 	feCrcWrong,
+	feWrongPostSeparatorByte,
 	feUnknownData,
 };
 

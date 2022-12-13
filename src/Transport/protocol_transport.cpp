@@ -135,11 +135,28 @@ void TransportLevelHandler::processData()
 							for (; bPos < FRAME_SEPARATORS_COUNT; ++bPos)
 								headerBuffer.get()[hPos++] = mBuffer[bPos];
 							headerBuffer.get()[hPos++] = mBuffer[bPos++];
+							bool correctFrame = true;
 							while (bPos <= mPos)
 							{
 								if (mBuffer[bPos - 1] != SEPARATOR_BYTE)
 									headerBuffer.get()[hPos++] = mBuffer[bPos];
+								else if (mBuffer[bPos] != SEPARATOR_POST_BYTE)
+								{
+									correctFrame = false;
+									break;
+								};
 								++bPos;
+							}
+							if (!correctFrame)
+							{
+								HAIER_LOGW(TAG, "Frame parsing error: %d", FrameError::feWrongPostSeparatorByte);
+								mBuffer.drop(bPos - 1);
+								mCurrentFrame.reset();
+								mPos = 0;
+								mSepCount = 0;
+								bufSize = mBuffer.getAvailable();
+								mFrameStartFound = false;
+								continue;
 							}
 							mBuffer.drop(bPos);
 							bufSize -= mPos + 1;
@@ -165,11 +182,28 @@ void TransportLevelHandler::processData()
 						std::unique_ptr<uint8_t[]> tmpBuf(new uint8_t[mPos + 1 - mSepCount]);
 						size_t hPos = 0;
 						size_t bPos = 0;
+						bool correctFrame = true;
 						while (bPos <= mPos)
 						{
 							if ((bPos == 0) || (mBuffer[bPos - 1] != SEPARATOR_BYTE))
 								tmpBuf.get()[hPos++] = mBuffer[bPos];
+							else if (mBuffer[bPos] != SEPARATOR_POST_BYTE)
+							{
+								correctFrame = false;
+								break;
+							}
 							++bPos;
+						}
+						if (!correctFrame)
+						{
+							HAIER_LOGW(TAG, "Frame parsing error: %d", FrameError::feWrongPostSeparatorByte);
+							mBuffer.drop(bPos - 1);
+							mCurrentFrame.reset();
+							mPos = 0;
+							mSepCount = 0;
+							bufSize = mBuffer.getAvailable();
+							mFrameStartFound = false;
+							continue;
 						}
 						mBuffer.drop(bPos);
 						FrameError err;
