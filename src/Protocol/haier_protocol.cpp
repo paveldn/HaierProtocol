@@ -132,7 +132,9 @@ void ProtocolHandler::loop()
 		break;
 	}
 	if (oldState != mState)
+    {
 		HAIER_LOGV(TAG, "Protocol state change: %d -> %d", oldState, mState);
+    }
 }
 
 bool ProtocolHandler::writeMessage(const HaierMessage& message, bool useCrc)
