@@ -36,12 +36,18 @@ uint8_t TransportLevelHandler::sendData(uint8_t frameType, const uint8_t* data, 
 {
 	if (dataSize > MAX_FRAME_SIZE - PURE_HEADER_SIZE)
 		return 0;
- 	HAIER_LOGD(TAG, "Sending frame: type %02X, data: %s", frameType, dataSize == 0 ? "<empty>" : buf2hex(data, dataSize).c_str());
+#if (HAIER_LOG_LEVEL > 3)
+	static char _header[]{"Sending frame: type 00, data:"};
+	const char* _p = hexmap + (frameType * 2);
+	_header[20] = _p[0];
+	_header[21] = _p[1];
+	HAIER_BUFD(TAG, _header, data, dataSize);
+#endif
 	HaierFrame frame = HaierFrame(frameType, data, (uint8_t)dataSize, useCrc);
 	size_t size = frame.getBufferSize();
 	std::unique_ptr<uint8_t[]> tmpBuf(new uint8_t[size]);
 	frame.fillBuffer(tmpBuf.get(), size);
-	HAIER_LOGV(TAG, "Sending data: %s", buf2hex(tmpBuf.get(), size).c_str());
+	HAIER_BUFV(TAG, "Sending data:", tmpBuf.get(), size);
 	mStream.write_array(tmpBuf.get(), size);
 	return (uint8_t)size;
 } 
@@ -52,12 +58,12 @@ size_t TransportLevelHandler::readData()
 	uint8_t val;
 	size_t count = mStream.available();
 #if (HAIER_LOG_LEVEL > 4)
-	std::stringstream outBuf;
+	std::unique_ptr<uint8_t[]> outBuf(new uint8_t[count]);
 #endif
 	while ((bytes_read < count) && (mStream.read_array(&val, 1) > 0))
 	{
 #if (HAIER_LOG_LEVEL > 4)
-		outBuf << std::setfill('0') << std::setw(2) << std::uppercase << std::hex << (int)val << ' ';
+		outBuf[bytes_read] = val;
 #endif
 		// IF there is 0xFF 0x55 replace it with 0xFF
 		if (mBuffer.push(val) == 0)
@@ -66,7 +72,9 @@ size_t TransportLevelHandler::readData()
 	}
 #if (HAIER_LOG_LEVEL > 4)
 	if (bytes_read > 0)
-		HAIER_LOGV(TAG, "Received data: %s", outBuf.str().c_str());
+	{
+		HAIER_BUFV(TAG, "Received data:", outBuf.get(), bytes_read);
+	}
 #endif
 	return bytes_read;
 }
@@ -164,9 +172,7 @@ void TransportLevelHandler::processData()
 							mSepCount = 0;
 							FrameError err;
 							mCurrentFrame.parseBuffer(headerBuffer.get(), hPos, err);
-							if (err == FrameError::feHeaderOnly)
-								HAIER_LOGV(TAG, "Found frame header: type %02X", mCurrentFrame.getFrameType());
-							else
+							if (err != FrameError::feHeaderOnly)
 							{
 								HAIER_LOGW(TAG, "Frame parsing error: %d", err);
 								mCurrentFrame.reset();
@@ -210,7 +216,14 @@ void TransportLevelHandler::processData()
 						mCurrentFrame.parseBuffer(tmpBuf.get(), hPos, err);
 						if (err == FrameError::feCompleteFrame)
 						{
-							HAIER_LOGD(TAG, "Frame found: type %02X, data: %s", mCurrentFrame.getFrameType(), buf2hex(tmpBuf.get(), mCurrentFrame.getDataSize()).c_str());
+#if (HAIER_LOG_LEVEL > 3)
+							static char _header[]{ "Frame found: type 00, data:" };
+							uint8_t _frameType = mCurrentFrame.getFrameType();
+							const char* _p = hexmap + (_frameType * 2);
+							_header[18] = _p[0];
+							_header[19] = _p[1];
+							HAIER_BUFD(TAG, _header, tmpBuf.get(), mCurrentFrame.getDataSize());
+#endif
 							mIncommingQueue.push(TimestampedFrame{ std::move(mCurrentFrame), mFrameStart });
 						}
 						else

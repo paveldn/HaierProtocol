@@ -4,23 +4,23 @@
 
 #define BUFFER_SIZE	4096
 
-constexpr char hexmap[] =
-	"000102030405060708090A0B0C0D0E0F"
-	"101112131415161718191A1B1C1D1E1F"
-	"202122232425262728292A2B2C2D2E2F"
-	"303132333435363738393A3B3C3D3E3F"
-	"404142434445464748494A4B4C4D4E4F"
-	"505152535455565758595A5B5C5D5E5F"
-	"606162636465666768696A6B6C6D6E6F"
-	"707172737475767778797A7B7C7D7E7F"
-	"808182838485868788898A8B8C8D8E8F"
-	"909192939495969798999A9B9C9D9E9F"
-	"A0A1A2A3A4A5A6A7A8A9AAABACADAEAF"
-	"B0B1B2B3B4B5B6B7B8B9BABBBCBDBEBF"
-	"C0C1C2C3C4C5C6C7C8C9CACBCCCDCECF"
-	"D0D1D2D3D4D5D6D7D8D9DADBDCDDDEDF"
-	"E0E1E2E3E4E5E6E7E8E9EAEBECEDEEEF"
-	"F0F1F2F3F4F5F6F7F8F9FAFBFCFDFEFF";
+const char hexmap[] =
+	"00" "01" "02" "03" "04" "05" "06" "07" "08" "09" "0A" "0B" "0C" "0D" "0E" "0F"
+	"10" "11" "12" "13" "14" "15" "16" "17" "18" "19" "1A" "1B" "1C" "1D" "1E" "1F"
+	"20" "21" "22" "23" "24" "25" "26" "27" "28" "29" "2A" "2B" "2C" "2D" "2E" "2F"
+	"30" "31" "32" "33" "34" "35" "36" "37" "38" "39" "3A" "3B" "3C" "3D" "3E" "3F"
+	"40" "41" "42" "43" "44" "45" "46" "47" "48" "49" "4A" "4B" "4C" "4D" "4E" "4F"
+	"50" "51" "52" "53" "54" "55" "56" "57" "58" "59" "5A" "5B" "5C" "5D" "5E" "5F"
+	"60" "61" "62" "63" "64" "65" "66" "67" "68" "69" "6A" "6B" "6C" "6D" "6E" "6F"
+	"70" "71" "72" "73" "74" "75" "76" "77" "78" "79" "7A" "7B" "7C" "7D" "7E" "7F"
+	"80" "81" "82" "83" "84" "85" "86" "87" "88" "89" "8A" "8B" "8C" "8D" "8E" "8F"
+	"90" "91" "92" "93" "94" "95" "96" "97" "98" "99" "9A" "9B" "9C" "9D" "9E" "9F"
+	"A0" "A1" "A2" "A3" "A4" "A5" "A6" "A7" "A8" "A9" "AA" "AB" "AC" "AD" "AE" "AF"
+	"B0" "B1" "B2" "B3" "B4" "B5" "B6" "B7" "B8" "B9" "BA" "BB" "BC" "BD" "BE" "BF"
+	"C0" "C1" "C2" "C3" "C4" "C5" "C6" "C7" "C8" "C9" "CA" "CB" "CC" "CD" "CE" "CF"
+	"D0" "D1" "D2" "D3" "D4" "D5" "D6" "D7" "D8" "D9" "DA" "DB" "DC" "DD" "DE" "DF"
+	"E0" "E1" "E2" "E3" "E4" "E5" "E6" "E7" "E8" "E9" "EA" "EB" "EC" "ED" "EE" "EF"
+	"F0" "F1" "F2" "F3" "F4" "F5" "F6" "F7" "F8" "F9" "FA" "FB" "FC" "FD" "FE" "FF";
 
 std::string buf2hex(const uint8_t* message, size_t size)
 {
@@ -34,6 +34,38 @@ std::string buf2hex(const uint8_t* message, size_t size)
 		raw[3 * i + 1] = p[1];
 	}
 	return raw;
+}
+
+size_t print_buf(const uint8_t* src_buf, size_t src_size, char* dst_buf, size_t dst_size)
+{
+	size_t bytes2print = src_size;
+	bool dots = false;
+	size_t pos = 0;
+	if (src_size > 0)
+	{
+		if (src_size * 3 > dst_size)
+		{
+			bytes2print = (dst_size - 5) / 3;
+			dots = true;
+		}
+		for (size_t i = 0; i < bytes2print; i++)
+		{
+			const char* p = hexmap + (src_buf[i] * 2);
+			dst_buf[3 * i] = p[0];
+			dst_buf[3 * i + 1] = p[1];
+			dst_buf[3 * i + 2] = ' ';
+		}
+		pos = 3 * bytes2print - 1;
+		if (dots)
+		{
+			pos++;
+			dst_buf[pos++] = '.';
+			dst_buf[pos++] = '.';
+			dst_buf[pos++] = '.';
+		}
+		dst_buf[pos] = '\0';
+	}
+	return pos;
 }
 
 namespace HaierProtocol
@@ -52,6 +84,22 @@ size_t logHaier(HaierLogLevel level, const char* tag, const char* format, ...)
 		va_start(args, format);
 		res = vsnprintf(msg_buffer, BUFFER_SIZE, format, args);
 		va_end(args);
+		globalLogHandler(level, tag, msg_buffer);
+	}
+	return res;
+}
+
+size_t logHaierBuffer(HaierLogLevel level, const char* tag, const char* header, const uint8_t* buffer, size_t size)
+{
+	size_t res = 0;
+	if ((globalLogHandler != nullptr) && (level != HaierLogLevel::llNone))
+	{
+		if (header != nullptr)
+		{
+			res = snprintf(msg_buffer, BUFFER_SIZE - 7, header);
+			msg_buffer[res++] = ' ';
+		}
+		res += print_buf(buffer, size, msg_buffer + res, BUFFER_SIZE - res);
 		globalLogHandler(level, tag, msg_buffer);
 	}
 	return res;

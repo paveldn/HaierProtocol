@@ -77,7 +77,6 @@ private:
 	{
 		psIdle,
 		psWaitingWorAnswer,
-		psAfterPacketDelay,
 	};
 	typedef std::pair<const HaierMessage, bool>	OutgoingQueueItem;
 	typedef std::queue<OutgoingQueueItem>	OutgoingQueue;
