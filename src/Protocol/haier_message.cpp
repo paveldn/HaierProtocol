@@ -1,8 +1,6 @@
 ﻿#include <cstring>
 #include "Protocol/haier_message.h"
 
-#define TAG "haier.protocol"
-
 namespace HaierProtocol
 {
 

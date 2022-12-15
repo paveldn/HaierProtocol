@@ -7,27 +7,7 @@
 extern const char hexmap[];
 
 #ifndef HAIER_LOG_LEVEL
-    #ifdef ESPHOME_LOG_LEVEL
-        #if (ESPHOME_LOG_LEVEL == "NONE") 
-            #define HAIER_LOG_LEVEL 0
-        #elif (ESPHOME_LOG_LEVEL == "ERROR") 
-            #define HAIER_LOG_LEVEL 1
-        #elif (ESPHOME_LOG_LEVEL == "WARN") 
-            #define HAIER_LOG_LEVEL 2
-        #elif (ESPHOME_LOG_LEVEL == "INFO") 
-            #define HAIER_LOG_LEVEL 3
-        #elif (ESPHOME_LOG_LEVEL == "DEBUG") 
-            #define HAIER_LOG_LEVEL 4
-        #elif (ESPHOME_LOG_LEVEL == "VERBOSE") 
-            #define HAIER_LOG_LEVEL 5
-        #elif (ESPHOME_LOG_LEVEL == "VERY_VERBOSE") 
-            #define HAIER_LOG_LEVEL 6
-        #else
-            #error "Unknown ESPHome log level!"
-        #endif
-    #else
-        #define HAIER_LOG_LEVEL 0
-    #endif
+    #define HAIER_LOG_LEVEL 0
 #endif
 
 #if (HAIER_LOG_LEVEL > 0)

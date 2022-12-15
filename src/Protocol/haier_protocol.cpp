@@ -82,7 +82,9 @@ void ProtocolHandler::loop()
 					mDefaultMessageHandler(msgType, frame.frame.getData(), frame.frame.getDataSize());
 				mProcessingMessage = false;
 				if (!mAnswerSent)
+                {
 					HAIER_LOGW(TAG, "No answer sent in incoming messages handler, message type %02X", msgType);
+                }
 			}
 			{
 				std::chrono::steady_clock::time_point now = std::chrono::steady_clock::now();
@@ -142,7 +144,9 @@ bool ProtocolHandler::writeMessage(const HaierMessage& message, bool useCrc)
 		isSuccess = (message.fillBuffer(buffer.get(), bufSize) > 0) && (mTransport.sendData(message.getFrameType(), buffer.get(), bufSize, useCrc) > 0);
 	}
 	if (!isSuccess)
-		HAIER_LOGE(TAG, "Error sending message : %02X", message.getFrameType());
+    {
+		HAIER_LOGE(TAG, "Error sending message: %02X", message.getFrameType());
+    }
 	mCooldownTimeout = std::chrono::steady_clock::now() + MESSAGE_COOLDOWN_INTERVAL;
 	return isSuccess;
 }

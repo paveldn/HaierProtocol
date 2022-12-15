@@ -3,7 +3,7 @@
 #include <sstream>
 #include "Transport/protocol_transport.h"
 
-#define TAG	"haier.transport"
+#define TAG	"haier.protocol"
 
 namespace HaierProtocol
 {
@@ -227,7 +227,9 @@ void TransportLevelHandler::processData()
 							mIncommingQueue.push(TimestampedFrame{ std::move(mCurrentFrame), mFrameStart });
 						}
 						else
+                        {
 							HAIER_LOGW(TAG, "Frame parsing error: %d", err);
+                        }
 						mCurrentFrame.reset();
 						mPos = 0;
 						mSepCount = 0;
