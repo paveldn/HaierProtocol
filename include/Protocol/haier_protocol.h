@@ -14,14 +14,14 @@ namespace HaierProtocol
 
 enum class HandlerError
 {
-	heOK = 0,
-	heUnsuportedMessage,
-	heUnexpectedMessage,
-	heUnsupportedSubcommand,
-	heWrongMessageStructure,
-	heRuntimeError,
-	heUnknownError,
-	NUM_HANDLER_ERROR
+    heOK = 0,
+    heUnsuportedMessage,
+    heUnexpectedMessage,
+    heUnsupportedSubcommand,
+    heWrongMessageStructure,
+    heRuntimeError,
+    heUnknownError,
+    heInvalidAnswer,
 };
 
 // Message handler type. Expected that function sends answer back.
@@ -52,49 +52,49 @@ class ProtocolHandler
 {
 public:
 
-	ProtocolHandler() = delete;
-	ProtocolHandler(const ProtocolHandler&) = delete;
-	ProtocolHandler& operator=(const ProtocolHandler&) = delete;
-	ProtocolHandler(ProtocolHandler&&) noexcept;
-	explicit ProtocolHandler(ProtocolStream&) noexcept;
-	size_t getOutgoingQueueSize() const noexcept {return mOutgoingMessages.size(); };
-	void sendMessage(const HaierMessage& command, bool useCrc);
-	void sendAnswer(const HaierMessage& answer);
-	void setMessageHandler(uint8_t messageType, MessageHandler handler);
-	void removeMessageHandler(uint8_t messageType);
-	void setDefaultMessageHandler(MessageHandler handler);
-	void setAnswerHandler(uint8_t messageType, AnswerHandler handler);
-	void removeAnswerHandler(uint8_t messageType);
-	void setDefaultAnswerHandler(AnswerHandler handler);
-	void setTimeoutHandler(uint8_t messageType, TimeoutHandler handler);
-	void removeTimeoutHandler(uint8_t messageType);
-	void setDefaultTimeoutHandler(TimeoutHandler handler);
-	virtual void loop();
+    ProtocolHandler() = delete;
+    ProtocolHandler(const ProtocolHandler&) = delete;
+    ProtocolHandler& operator=(const ProtocolHandler&) = delete;
+    ProtocolHandler(ProtocolHandler&&) noexcept;
+    explicit ProtocolHandler(ProtocolStream&) noexcept;
+    size_t getOutgoingQueueSize() const noexcept {return mOutgoingMessages.size(); };
+    void sendMessage(const HaierMessage& command, bool useCrc);
+    void sendAnswer(const HaierMessage& answer);
+    void setMessageHandler(uint8_t messageType, MessageHandler handler);
+    void removeMessageHandler(uint8_t messageType);
+    void setDefaultMessageHandler(MessageHandler handler);
+    void setAnswerHandler(uint8_t messageType, AnswerHandler handler);
+    void removeAnswerHandler(uint8_t messageType);
+    void setDefaultAnswerHandler(AnswerHandler handler);
+    void setTimeoutHandler(uint8_t messageType, TimeoutHandler handler);
+    void removeTimeoutHandler(uint8_t messageType);
+    void setDefaultTimeoutHandler(TimeoutHandler handler);
+    virtual void loop();
 protected:
-	bool writeMessage(const HaierMessage& message, bool useCrc);
+    bool writeMessage(const HaierMessage& message, bool useCrc);
 private:
-	enum class ProtocolState
-	{
-		psIdle,
-		psWaitingWorAnswer,
-	};
-	typedef std::pair<const HaierMessage, bool>	OutgoingQueueItem;
-	typedef std::queue<OutgoingQueueItem>	OutgoingQueue;
-	TransportLevelHandler					mTransport;
-	std::map<uint8_t, MessageHandler>		mMessageHandlersMap;
-	std::map<uint8_t, AnswerHandler>		mAnswerHandlersMap;
-	std::map<uint8_t, TimeoutHandler>		mTimeoutHandlersMap;	
-	OutgoingQueue							mOutgoingMessages;
-	MessageHandler							mDefaultMessageHandler;
-	AnswerHandler							mDefaultAnswerHandler;
-	TimeoutHandler							mDefaultTimeoutHandler;
-	ProtocolState							mState;
-	bool									mProcessingMessage;
-	bool									mIncommingMessageCrcStatus;
-	bool									mAnswerSent;
-	uint8_t									mLastMessageType;
-	std::chrono::steady_clock::time_point	mCooldownTimeout;
-	std::chrono::steady_clock::time_point	mAnswerTimeout;
+    enum class ProtocolState
+    {
+        psIdle,
+        psWaitingWorAnswer,
+    };
+    typedef std::pair<const HaierMessage, bool> OutgoingQueueItem;
+    typedef std::queue<OutgoingQueueItem>   OutgoingQueue;
+    TransportLevelHandler                   mTransport;
+    std::map<uint8_t, MessageHandler>       mMessageHandlersMap;
+    std::map<uint8_t, AnswerHandler>        mAnswerHandlersMap;
+    std::map<uint8_t, TimeoutHandler>       mTimeoutHandlersMap;    
+    OutgoingQueue                           mOutgoingMessages;
+    MessageHandler                          mDefaultMessageHandler;
+    AnswerHandler                           mDefaultAnswerHandler;
+    TimeoutHandler                          mDefaultTimeoutHandler;
+    ProtocolState                           mState;
+    bool                                    mProcessingMessage;
+    bool                                    mIncommingMessageCrcStatus;
+    bool                                    mAnswerSent;
+    uint8_t                                 mLastMessageType;
+    std::chrono::steady_clock::time_point   mCooldownTimeout;
+    std::chrono::steady_clock::time_point   mAnswerTimeout;
 };
 
 
