@@ -3,8 +3,6 @@
 #include <memory>
 #include "Protocol/haier_protocol.h"
 
-#define TAG "haier.protocol"
-
 namespace HaierProtocol
 {
 
@@ -63,7 +61,7 @@ void ProtocolHandler::loop()
             if (messagesCount > 1)
             {
                 // Shouldn't get more than 1 message, drop all except last
-                HAIER_LOGW(TAG, "Incoming queue size %d (should be not more than 1). Dropping extra messages", messagesCount);
+                HAIER_LOGW("Incoming queue size %d (should be not more than 1). Dropping extra messages", messagesCount);
                 mTransport.drop(messagesCount - 1);
                 messagesCount = 1;
             }
@@ -84,11 +82,11 @@ void ProtocolHandler::loop()
                 mProcessingMessage = false;
                 if (hres != HandlerError::heOK)
                 {
-                    HAIER_LOGW(TAG, "Message handler error, msg=%02X, err=%d", msgType, hres);
+                    HAIER_LOGW("Message handler error, msg=%02X, err=%d", msgType, hres);
                 }
                 else if (!mAnswerSent)
                 {
-                    HAIER_LOGW(TAG, "No answer sent in incoming messages handler, message type %02X", msgType);
+                    HAIER_LOGW("No answer sent in incoming messages handler, message type %02X", msgType);
                 }
             }
             {
@@ -121,7 +119,7 @@ void ProtocolHandler::loop()
                 hres = mDefaultTimeoutHandler(mLastMessageType);
             if (hres != HandlerError::heOK)
             {
-                HAIER_LOGW(TAG, "Timeout handler error, msg=%02X, err=%d", mLastMessageType, hres);
+                HAIER_LOGW("Timeout handler error, msg=%02X, err=%d", mLastMessageType, hres);
             }    
             mState = ProtocolState::psIdle;
             break;
@@ -139,7 +137,7 @@ void ProtocolHandler::loop()
                 hres = mDefaultAnswerHandler(mLastMessageType, msgType, frame.frame.getData(), frame.frame.getDataSize());
             if (hres != HandlerError::heOK)
             {
-                HAIER_LOGW(TAG, "Answer handler error, msg=%02X, answ=%02X, err=%d", mLastMessageType, msgType, hres);
+                HAIER_LOGW("Answer handler error, msg=%02X, answ=%02X, err=%d", mLastMessageType, msgType, hres);
             }    
             mState = ProtocolState::psIdle;
         }
@@ -160,7 +158,7 @@ bool ProtocolHandler::writeMessage(const HaierMessage& message, bool useCrc)
     }
     if (!isSuccess)
     {
-        HAIER_LOGE(TAG, "Error sending message: %02X", message.getFrameType());
+        HAIER_LOGE("Error sending message: %02X", message.getFrameType());
     }
     mCooldownTimeout = std::chrono::steady_clock::now() + MESSAGE_COOLDOWN_INTERVAL;
     return isSuccess;
@@ -179,7 +177,7 @@ void ProtocolHandler::sendAnswer(const HaierMessage& answer)
     }
     else
     {
-        HAIER_LOGE(TAG, "Answer can be send only from message handler!");
+        HAIER_LOGE("Answer can be send only from message handler!");
     }
 }
 
@@ -246,7 +244,7 @@ void ProtocolHandler::setDefaultTimeoutHandler(TimeoutHandler handler)
 /// <returns>Error code</returns>
 HandlerError defaultMessageHandler(uint8_t messageType, const uint8_t* data, size_t dataSize)
 {
-    HAIER_LOGW(TAG, "Unsupported message received: type %02X data: %s", messageType, dataSize > 0 ? buf2hex(data, dataSize).c_str() : "<empty>");
+    HAIER_LOGW("Unsupported message received: type %02X data: %s", messageType, dataSize > 0 ? buf2hex(data, dataSize).c_str() : "<empty>");
     return HandlerError::heUnsuportedMessage;
 }
 
@@ -260,7 +258,7 @@ HandlerError defaultMessageHandler(uint8_t messageType, const uint8_t* data, siz
 /// <returns>Error code</returns>
 HandlerError defaultAnswerHandler(uint8_t requestType, uint8_t messageType, const uint8_t* data, size_t dataSize)
 {
-    HAIER_LOGW(TAG, "Unsupported answer to %02X received: type %02X data: %s", requestType, messageType, dataSize > 0 ? buf2hex(data, dataSize).c_str() : "<empty>");
+    HAIER_LOGW("Unsupported answer to %02X received: type %02X data: %s", requestType, messageType, dataSize > 0 ? buf2hex(data, dataSize).c_str() : "<empty>");
     return HandlerError::heUnsuportedMessage;
 }
 
@@ -271,7 +269,7 @@ HandlerError defaultAnswerHandler(uint8_t requestType, uint8_t messageType, cons
 /// <returns>Error code</returns>
 HandlerError defaultTimeoutHandler(uint8_t messageType)
 {
-    HAIER_LOGW(TAG, "Message %02X answer timeout", messageType);
+    HAIER_LOGW("Message %02X answer timeout", messageType);
     return HandlerError::heOK;
 }
 

@@ -2,7 +2,10 @@
 #include <stdio.h>
 #include "Utils/haier_log.h"
 
-#define BUFFER_SIZE 4096
+#ifndef HAIER_LOG_TAG
+#define HAIER_LOG_TAG   "haier.protocol"
+#endif
+#define BUFFER_SIZE		4096
 
 const char hexmap[] =
     "00" "01" "02" "03" "04" "05" "06" "07" "08" "09" "0A" "0B" "0C" "0D" "0E" "0F"
@@ -75,34 +78,34 @@ char msg_buffer[BUFFER_SIZE];
 
 LogHandler globalLogHandler = nullptr;
 
-size_t logHaier(HaierLogLevel level, const char* tag, const char* format, ...)
+size_t logHaier(HaierLogLevel level, const char* format, ...)
 {
-    size_t res = 0;
-    if ((globalLogHandler != nullptr) && (level != HaierLogLevel::llNone))
-    {
-        va_list args;
-        va_start(args, format);
-        res = vsnprintf(msg_buffer, BUFFER_SIZE, format, args);
-        va_end(args);
-        globalLogHandler(level, tag, msg_buffer);
-    }
-    return res;
+	size_t res = 0;
+	if ((globalLogHandler != nullptr) && (level != HaierLogLevel::llNone))
+	{
+		va_list args;
+		va_start(args, format);
+		res = vsnprintf(msg_buffer, BUFFER_SIZE, format, args);
+		va_end(args);
+		globalLogHandler(level, HAIER_LOG_TAG, msg_buffer);
+	}
+	return res;
 }
 
-size_t logHaierBuffer(HaierLogLevel level, const char* tag, const char* header, const uint8_t* buffer, size_t size)
+size_t logHaierBuffer(HaierLogLevel level, const char* header, const uint8_t* buffer, size_t size)
 {
-    size_t res = 0;
-    if ((globalLogHandler != nullptr) && (level != HaierLogLevel::llNone))
-    {
-        if (header != nullptr)
-        {
-            res = snprintf(msg_buffer, BUFFER_SIZE - 7, header);
-            msg_buffer[res++] = ' ';
-        }
-        res += print_buf(buffer, size, msg_buffer + res, BUFFER_SIZE - res);
-        globalLogHandler(level, tag, msg_buffer);
-    }
-    return res;
+	size_t res = 0;
+	if ((globalLogHandler != nullptr) && (level != HaierLogLevel::llNone))
+	{
+		if (header != nullptr)
+		{
+			res = snprintf(msg_buffer, BUFFER_SIZE - 7, header);
+			msg_buffer[res++] = ' ';
+		}
+		res += print_buf(buffer, size, msg_buffer + res, BUFFER_SIZE - res);
+		globalLogHandler(level, HAIER_LOG_TAG, msg_buffer);
+	}
+	return res;
 }
 
 void setLogHandler(LogHandler handler)

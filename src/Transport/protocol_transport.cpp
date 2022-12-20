@@ -3,8 +3,6 @@
 #include <sstream>
 #include "Transport/protocol_transport.h"
 
-#define TAG "haier.protocol"
-
 namespace HaierProtocol
 {
 
@@ -41,13 +39,13 @@ uint8_t TransportLevelHandler::sendData(uint8_t frameType, const uint8_t* data, 
     const char* _p = hexmap + (frameType * 2);
     _header[20] = _p[0];
     _header[21] = _p[1];
-    HAIER_BUFD(TAG, _header, data, dataSize);
+    HAIER_BUFD(_header, data, dataSize);
 #endif
     HaierFrame frame = HaierFrame(frameType, data, (uint8_t)dataSize, useCrc);
     size_t size = frame.getBufferSize();
     std::unique_ptr<uint8_t[]> tmpBuf(new uint8_t[size]);
     frame.fillBuffer(tmpBuf.get(), size);
-    HAIER_BUFV(TAG, "Sending data:", tmpBuf.get(), size);
+    HAIER_BUFV("Sending data:", tmpBuf.get(), size);
     mStream.write_array(tmpBuf.get(), size);
     return (uint8_t)size;
 } 
@@ -73,7 +71,7 @@ size_t TransportLevelHandler::readData()
 #if (HAIER_LOG_LEVEL > 4)
     if (bytes_read > 0)
     {
-        HAIER_BUFV(TAG, "Received data:", outBuf.get(), bytes_read);
+        HAIER_BUFV("Received data:", outBuf.get(), bytes_read);
     }
 #endif
     return bytes_read;
@@ -87,7 +85,7 @@ void TransportLevelHandler::processData()
         if (std::chrono::duration_cast<std::chrono::milliseconds>(now - mFrameStart) > FRAME_TIMEOUT)
         {
             // Timeout
-            HAIER_LOGW(TAG, "Frame timeout!");
+            HAIER_LOGW("Frame timeout!");
             dropBytes(mPos);
             mPos = 0;
             mSepCount = 0;
@@ -157,7 +155,7 @@ void TransportLevelHandler::processData()
                             }
                             if (!correctFrame)
                             {
-                                HAIER_LOGW(TAG, "Frame parsing error: %d", FrameError::feWrongPostSeparatorByte);
+                                HAIER_LOGW("Frame parsing error: %d", FrameError::feWrongPostSeparatorByte);
                                 mBuffer.drop(bPos - 1);
                                 mCurrentFrame.reset();
                                 mPos = 0;
@@ -174,7 +172,7 @@ void TransportLevelHandler::processData()
                             mCurrentFrame.parseBuffer(headerBuffer.get(), hPos, err);
                             if (err != FrameError::feHeaderOnly)
                             {
-                                HAIER_LOGW(TAG, "Frame parsing error: %d", err);
+                                HAIER_LOGW("Frame parsing error: %d", err);
                                 mCurrentFrame.reset();
                                 mFrameStartFound = false;
                             }
@@ -202,7 +200,7 @@ void TransportLevelHandler::processData()
                         }
                         if (!correctFrame)
                         {
-                            HAIER_LOGW(TAG, "Frame parsing error: %d", FrameError::feWrongPostSeparatorByte);
+                            HAIER_LOGW("Frame parsing error: %d", FrameError::feWrongPostSeparatorByte);
                             mBuffer.drop(bPos - 1);
                             mCurrentFrame.reset();
                             mPos = 0;
@@ -222,13 +220,13 @@ void TransportLevelHandler::processData()
                             const char* _p = hexmap + (_frameType * 2);
                             _header[18] = _p[0];
                             _header[19] = _p[1];
-                            HAIER_BUFD(TAG, _header, tmpBuf.get(), mCurrentFrame.getDataSize());
+                            HAIER_BUFD(_header, tmpBuf.get(), mCurrentFrame.getDataSize());
 #endif
                             mIncommingQueue.push(TimestampedFrame{ std::move(mCurrentFrame), mFrameStart });
                         }
                         else
                         {
-                            HAIER_LOGW(TAG, "Frame parsing error: %d", err);
+                            HAIER_LOGW("Frame parsing error: %d", err);
                         }
                         mCurrentFrame.reset();
                         mPos = 0;
@@ -293,7 +291,7 @@ TransportLevelHandler::~TransportLevelHandler()
 
 void TransportLevelHandler::clear()
 {
-    HAIER_LOGV(TAG, "Clearing buffer, data size: %d", mBuffer.getAvailable());
+    HAIER_LOGV("Clearing buffer, data size: %d", mBuffer.getAvailable());
     mBuffer.clear();
     mPos = 0;
     mSepCount = 0;
@@ -304,7 +302,7 @@ void TransportLevelHandler::clear()
 void TransportLevelHandler::dropBytes(size_t size)
 {
     mBuffer.drop(size);
-    HAIER_LOGV(TAG, "Dropping %d bytes", size);
+    HAIER_LOGV("Dropping %d bytes", size);
 }
 
 } // HaierProtocol

@@ -11,55 +11,55 @@ extern const char hexmap[];
 #endif
 
 #if (HAIER_LOG_LEVEL > 0)
-    #define HAIER_LOGE(tag, ...)    logHaier(HaierProtocol::HaierLogLevel::llError, tag, __VA_ARGS__)
+    #define HAIER_LOGE(...)	logHaier(HaierProtocol::HaierLogLevel::llError, __VA_ARGS__)
 #else
-    #define HAIER_LOGE(tag, ...)
+    #define HAIER_LOGE(...)
 #endif
 #if (HAIER_LOG_LEVEL > 1)
-    #define HAIER_LOGW(tag, ...)    logHaier(HaierProtocol::HaierLogLevel::llWarning, tag, __VA_ARGS__)
+    #define HAIER_LOGW(...)	logHaier(HaierProtocol::HaierLogLevel::llWarning, __VA_ARGS__)
 #else
-    #define HAIER_LOGW(tag, ...)
+    #define HAIER_LOGW(...)
 #endif
 #if (HAIER_LOG_LEVEL > 2)
-    #define HAIER_LOGI(tag, ...)    logHaier(HaierProtocol::HaierLogLevel::llInfo, tag, __VA_ARGS__)
+    #define HAIER_LOGI(...)	logHaier(HaierProtocol::HaierLogLevel::llInfo, __VA_ARGS__)
 #else
-    #define HAIER_LOGI(tag, ...)
+    #define HAIER_LOGI(...)
 #endif
 #if (HAIER_LOG_LEVEL > 3)
-    #define HAIER_LOGD(tag, ...)    logHaier(HaierProtocol::HaierLogLevel::llDebug, tag, __VA_ARGS__)
+    #define HAIER_LOGD(...)	logHaier(HaierProtocol::HaierLogLevel::llDebug, __VA_ARGS__)
 #else
-    #define HAIER_LOGD(tag, ...)
+    #define HAIER_LOGD(...)
 #endif
 #if (HAIER_LOG_LEVEL > 4)
-    #define HAIER_LOGV(tag, ...)    logHaier(HaierProtocol::HaierLogLevel::llVerbose, tag, __VA_ARGS__)
+    #define HAIER_LOGV(...)	logHaier(HaierProtocol::HaierLogLevel::llVerbose, __VA_ARGS__)
 #else
-    #define HAIER_LOGV(tag, ...)
+    #define HAIER_LOGV(...)
 #endif
 
 #if (HAIER_LOG_LEVEL > 0)
-#define HAIER_BUFE(tag, header, buffer, size)   logHaierBuffer(HaierProtocol::HaierLogLevel::llError, tag, header, buffer, size)
+#define HAIER_BUFE(header, buffer, size)	logHaierBuffer(HaierProtocol::HaierLogLevel::llError, header, buffer, size)
 #else
-#define HAIER_BUFE(tag, header, buffer, size)
+#define HAIER_BUFE(header, buffer, size)
 #endif
 #if (HAIER_LOG_LEVEL > 1)
-#define HAIER_BUFW(tag, header, buffer, size)   logHaierBuffer(HaierProtocol::HaierLogLevel::llWarning, tag, header, buffer, size)
+#define HAIER_BUFW(header, buffer, size)	logHaierBuffer(HaierProtocol::HaierLogLevel::llWarning, header, buffer, size)
 #else
-#define HAIER_BUFW(tag, header, buffer, size)
+#define HAIER_BUFW(header, buffer, size)
 #endif
 #if (HAIER_LOG_LEVEL > 2)
-#define HAIER_BUFI(tag, header, buffer, size)   logHaierBuffer(HaierProtocol::HaierLogLevel::llInfo, tag, header, buffer, size)
+#define HAIER_BUFI(header, buffer, size)	logHaierBuffer(HaierProtocol::HaierLogLevel::llInfo, header, buffer, size)
 #else
-#define HAIER_BUFI(tag, header, buffer, size)
+#define HAIER_BUFI(header, buffer, size)
 #endif
 #if (HAIER_LOG_LEVEL > 3)
-#define HAIER_BUFD(tag, header, buffer, size)   logHaierBuffer(HaierProtocol::HaierLogLevel::llDebug, tag, header, buffer, size)
+#define HAIER_BUFD(header, buffer, size)	logHaierBuffer(HaierProtocol::HaierLogLevel::llDebug, header, buffer, size)
 #else
-#define HAIER_BUFD(tag, header, buffer, size)
+#define HAIER_BUFD(header, buffer, size)
 #endif
 #if (HAIER_LOG_LEVEL > 4)
-#define HAIER_BUFV(tag, header, buffer, size)   logHaierBuffer(HaierProtocol::HaierLogLevel::llVerbose, tag, header, buffer, size)
+#define HAIER_BUFV(header, buffer, size)	logHaierBuffer(HaierProtocol::HaierLogLevel::llVerbose, header, buffer, size)
 #else
-#define HAIER_BUFV(tag, header, buffer, size)
+#define HAIER_BUFV(header, buffer, size)
 #endif
 
 std::string buf2hex(const uint8_t* message, size_t size);
@@ -79,8 +79,8 @@ enum class HaierLogLevel
                           // <log_level>,       <tag>,   <message>
 typedef std::function<void(HaierLogLevel, const char*, const char*)> LogHandler;
 
-size_t logHaier(HaierLogLevel level, const char* tag, const char* format, ...);
-size_t logHaierBuffer(HaierLogLevel level, const char* tag, const char* header, const uint8_t* buffer, size_t size);
+size_t logHaier(HaierLogLevel level, const char* format, ...);
+size_t logHaierBuffer(HaierLogLevel level, const char* header, const uint8_t* buffer, size_t size);
 void setLogHandler(LogHandler);
 void resetLogHandler();
 
