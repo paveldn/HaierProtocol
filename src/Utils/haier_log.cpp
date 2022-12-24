@@ -102,7 +102,10 @@ size_t logHaierBuffer(HaierLogLevel level, const char* header, const uint8_t* bu
 			res = snprintf(msg_buffer, BUFFER_SIZE - 7, header);
 			msg_buffer[res++] = ' ';
 		}
-		res += print_buf(buffer, size, msg_buffer + res, BUFFER_SIZE - res);
+        if ((buffer != nullptr) && (size > 0))
+		    res += print_buf(buffer, size, msg_buffer + res, BUFFER_SIZE - res);
+        else
+            res += snprintf(msg_buffer + res, BUFFER_SIZE - res - 1, "<empty>");
 		globalLogHandler(level, HAIER_LOG_TAG, msg_buffer);
 	}
 	return res;
