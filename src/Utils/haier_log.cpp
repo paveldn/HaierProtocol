@@ -1,11 +1,10 @@
 #include <cstdarg>
 #include <stdio.h>
-#include "Utils/haier_log.h"
+#include "utils/haier_log.h"
 
 #ifndef HAIER_LOG_TAG
-#define HAIER_LOG_TAG   "haier.protocol"
+#define HAIER_LOG_TAG "haier.protocol"
 #endif
-#define BUFFER_SIZE		4096
 
 const char hexmap[] =
     "00" "01" "02" "03" "04" "05" "06" "07" "08" "09" "0A" "0B" "0C" "0D" "0E" "0F"
@@ -25,102 +24,109 @@ const char hexmap[] =
     "E0" "E1" "E2" "E3" "E4" "E5" "E6" "E7" "E8" "E9" "EA" "EB" "EC" "ED" "EE" "EF"
     "F0" "F1" "F2" "F3" "F4" "F5" "F6" "F7" "F8" "F9" "FA" "FB" "FC" "FD" "FE" "FF";
 
-std::string buf2hex(const uint8_t* message, size_t size)
+std::string buf_to_hex(const uint8_t *message, size_t size)
 {
-
-    if (size == 0)
-        return "";
-    std::string raw(size * 3 - 1, ' ');
-    for (size_t i = 0; i < size; ++i) {
-        const char* p = hexmap + (message[i] * 2);
-        raw[3 * i] = p[0];
-        raw[3 * i + 1] = p[1];
-    }
-    return raw;
+  if (size == 0)
+    return "";
+  std::string raw(size * 3 - 1, ' ');
+  for (size_t i = 0; i < size; ++i)
+  {
+    const char *p = hexmap + (message[i] * 2);
+    raw[3 * i] = p[0];
+    raw[3 * i + 1] = p[1];
+  }
+  return raw;
 }
 
-size_t print_buf(const uint8_t* src_buf, size_t src_size, char* dst_buf, size_t dst_size)
+size_t print_buf(const uint8_t *src_buf, size_t src_size, char *dst_buf, size_t dst_size)
 {
-    size_t bytes2print = src_size;
-    bool dots = false;
-    size_t pos = 0;
-    if (src_size > 0)
+  size_t bytes_to_print = src_size;
+  bool dots = false;
+  size_t pos = 0;
+  if (src_size > 0)
+  {
+    if (src_size * 3 > dst_size)
     {
-        if (src_size * 3 > dst_size)
-        {
-            bytes2print = (dst_size - 5) / 3;
-            dots = true;
-        }
-        for (size_t i = 0; i < bytes2print; i++)
-        {
-            const char* p = hexmap + (src_buf[i] * 2);
-            dst_buf[3 * i] = p[0];
-            dst_buf[3 * i + 1] = p[1];
-            dst_buf[3 * i + 2] = ' ';
-        }
-        pos = 3 * bytes2print - 1;
-        if (dots)
-        {
-            pos++;
-            dst_buf[pos++] = '.';
-            dst_buf[pos++] = '.';
-            dst_buf[pos++] = '.';
-        }
-        dst_buf[pos] = '\0';
+      bytes_to_print = (dst_size - 5) / 3;
+      dots = true;
     }
-    return pos;
+    for (size_t i = 0; i < bytes_to_print; i++)
+    {
+      const char *p = hexmap + (src_buf[i] * 2);
+      dst_buf[3 * i] = p[0];
+      dst_buf[3 * i + 1] = p[1];
+      dst_buf[3 * i + 2] = ' ';
+    }
+    pos = 3 * bytes_to_print - 1;
+    if (dots)
+    {
+      pos++;
+      dst_buf[pos++] = '.';
+      dst_buf[pos++] = '.';
+      dst_buf[pos++] = '.';
+    }
+    dst_buf[pos] = '\0';
+  }
+  return pos;
 }
 
-namespace HaierProtocol
+namespace haier_protocol
 {
+
+constexpr size_t BUFFER_SIZE = 4096;
 
 char msg_buffer[BUFFER_SIZE];
 
-LogHandler globalLogHandler = nullptr;
+LogHandler global_log_handler = nullptr;
 
-size_t logHaier(HaierLogLevel level, const char* format, ...)
+size_t log_haier(HaierLogLevel level, const char *format, ...)
 {
-	size_t res = 0;
-	if ((globalLogHandler != nullptr) && (level != HaierLogLevel::llNone))
-	{
-		va_list args;
-		va_start(args, format);
-		res = vsnprintf(msg_buffer, BUFFER_SIZE, format, args);
-		va_end(args);
-		globalLogHandler(level, HAIER_LOG_TAG, msg_buffer);
-	}
-	return res;
+  size_t res = 0;
+  if ((global_log_handler != nullptr) && (level != HaierLogLevel::LEVEL_NONE))
+  {
+    va_list args;
+    va_start(args, format);
+    res = vsnprintf(msg_buffer, BUFFER_SIZE, format, args);
+    va_end(args);
+    global_log_handler(level, HAIER_LOG_TAG, msg_buffer);
+  }
+  return res;
 }
 
-size_t logHaierBuffer(HaierLogLevel level, const char* header, const uint8_t* buffer, size_t size)
+size_t log_haier_buffer(HaierLogLevel level, const char *header, const uint8_t *buffer, size_t size)
 {
-	size_t res = 0;
-	if ((globalLogHandler != nullptr) && (level != HaierLogLevel::llNone))
-	{
-		if (header != nullptr)
-		{
-			res = snprintf(msg_buffer, BUFFER_SIZE - 7, header);
-			msg_buffer[res++] = ' ';
-		}
-        if ((buffer != nullptr) && (size > 0))
-		    res += print_buf(buffer, size, msg_buffer + res, BUFFER_SIZE - res);
-        else
-            res += snprintf(msg_buffer + res, BUFFER_SIZE - res - 1, "<empty>");
-		globalLogHandler(level, HAIER_LOG_TAG, msg_buffer);
-	}
-	return res;
+  size_t res = 0;
+  if ((global_log_handler != nullptr) && (level != HaierLogLevel::LEVEL_NONE))
+  {
+    if (header != nullptr)
+    {
+      res = 0;
+      while (res <= BUFFER_SIZE - 7)
+      {
+        if (header[res] == '\0')
+          break;
+        msg_buffer[res] = header[res];
+        ++res;
+      }
+      msg_buffer[res++] = ' ';
+    }
+    if ((buffer != nullptr) && (size > 0))
+      res += print_buf(buffer, size, msg_buffer + res, BUFFER_SIZE - res);
+    else
+      res += snprintf(msg_buffer + res, BUFFER_SIZE - res - 1, "<empty>");
+    global_log_handler(level, HAIER_LOG_TAG, msg_buffer);
+  }
+  return res;
 }
 
-void setLogHandler(LogHandler handler)
+void set_log_handler(LogHandler handler)
 {
-    globalLogHandler = handler;
+  global_log_handler = handler;
 }
 
-void resetLogHandler()
+void reset_log_handler()
 {
-    globalLogHandler = nullptr;
+  global_log_handler = nullptr;
 }
 
-
-
-} // HaierProtocol
+} // haier_protocol

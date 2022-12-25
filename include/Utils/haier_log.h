@@ -11,78 +11,78 @@ extern const char hexmap[];
 #endif
 
 #if (HAIER_LOG_LEVEL > 0)
-    #define HAIER_LOGE(...)	logHaier(HaierProtocol::HaierLogLevel::llError, __VA_ARGS__)
+    #define HAIER_LOGE(...)	log_haier(haier_protocol::HaierLogLevel::LEVEL_ERROR, __VA_ARGS__)
 #else
     #define HAIER_LOGE(...)
 #endif
 #if (HAIER_LOG_LEVEL > 1)
-    #define HAIER_LOGW(...)	logHaier(HaierProtocol::HaierLogLevel::llWarning, __VA_ARGS__)
+    #define HAIER_LOGW(...)	log_haier(haier_protocol::HaierLogLevel::LEVEL_WARNING, __VA_ARGS__)
 #else
     #define HAIER_LOGW(...)
 #endif
 #if (HAIER_LOG_LEVEL > 2)
-    #define HAIER_LOGI(...)	logHaier(HaierProtocol::HaierLogLevel::llInfo, __VA_ARGS__)
+    #define HAIER_LOGI(...)	log_haier(haier_protocol::HaierLogLevel::LEVEL_INFO, __VA_ARGS__)
 #else
     #define HAIER_LOGI(...)
 #endif
 #if (HAIER_LOG_LEVEL > 3)
-    #define HAIER_LOGD(...)	logHaier(HaierProtocol::HaierLogLevel::llDebug, __VA_ARGS__)
+    #define HAIER_LOGD(...)	log_haier(haier_protocol::HaierLogLevel::LEVEL_DEBUG, __VA_ARGS__)
 #else
     #define HAIER_LOGD(...)
 #endif
 #if (HAIER_LOG_LEVEL > 4)
-    #define HAIER_LOGV(...)	logHaier(HaierProtocol::HaierLogLevel::llVerbose, __VA_ARGS__)
+    #define HAIER_LOGV(...)	log_haier(haier_protocol::HaierLogLevel::LEVEL_VERBOSE, __VA_ARGS__)
 #else
     #define HAIER_LOGV(...)
 #endif
 
 #if (HAIER_LOG_LEVEL > 0)
-#define HAIER_BUFE(header, buffer, size)	logHaierBuffer(HaierProtocol::HaierLogLevel::llError, header, buffer, size)
+#define HAIER_BUFE(header, buffer, size)	log_haier_buffer(haier_protocol::HaierLogLevel::LEVEL_ERROR, header, buffer, size)
 #else
 #define HAIER_BUFE(header, buffer, size)
 #endif
 #if (HAIER_LOG_LEVEL > 1)
-#define HAIER_BUFW(header, buffer, size)	logHaierBuffer(HaierProtocol::HaierLogLevel::llWarning, header, buffer, size)
+#define HAIER_BUFW(header, buffer, size)	log_haier_buffer(haier_protocol::HaierLogLevel::LEVEL_WARNING, header, buffer, size)
 #else
 #define HAIER_BUFW(header, buffer, size)
 #endif
 #if (HAIER_LOG_LEVEL > 2)
-#define HAIER_BUFI(header, buffer, size)	logHaierBuffer(HaierProtocol::HaierLogLevel::llInfo, header, buffer, size)
+#define HAIER_BUFI(header, buffer, size)	log_haier_buffer(haier_protocol::HaierLogLevel::LEVEL_INFO, header, buffer, size)
 #else
 #define HAIER_BUFI(header, buffer, size)
 #endif
 #if (HAIER_LOG_LEVEL > 3)
-#define HAIER_BUFD(header, buffer, size)	logHaierBuffer(HaierProtocol::HaierLogLevel::llDebug, header, buffer, size)
+#define HAIER_BUFD(header, buffer, size)	log_haier_buffer(haier_protocol::HaierLogLevel::LEVEL_DEBUG, header, buffer, size)
 #else
 #define HAIER_BUFD(header, buffer, size)
 #endif
 #if (HAIER_LOG_LEVEL > 4)
-#define HAIER_BUFV(header, buffer, size)	logHaierBuffer(HaierProtocol::HaierLogLevel::llVerbose, header, buffer, size)
+#define HAIER_BUFV(header, buffer, size)	log_haier_buffer(haier_protocol::HaierLogLevel::LEVEL_VERBOSE, header, buffer, size)
 #else
 #define HAIER_BUFV(header, buffer, size)
 #endif
 
-std::string buf2hex(const uint8_t* message, size_t size);
+std::string buf_to_hex(const uint8_t* message, size_t size);
 
-namespace HaierProtocol
+namespace haier_protocol
 {
 
 enum class HaierLogLevel
 {
-    llNone = 0,
-    llError = 1,
-    llWarning = 2,
-    llInfo = 3,
-    llDebug = 5,
-    llVerbose = 6
+    LEVEL_NONE = 0,
+    LEVEL_ERROR = 1,
+    LEVEL_WARNING = 2,
+    LEVEL_INFO = 3,
+    LEVEL_DEBUG = 5,
+    LEVEL_VERBOSE = 6
 };
-                          // <log_level>,       <tag>,   <message>
-typedef std::function<void(HaierLogLevel, const char*, const char*)> LogHandler;
+                                   // <log_level>,       <tag>,   <message>
+using LogHandler = std::function<void(HaierLogLevel, const char*, const char*)>;
 
-size_t logHaier(HaierLogLevel level, const char* format, ...);
-size_t logHaierBuffer(HaierLogLevel level, const char* header, const uint8_t* buffer, size_t size);
-void setLogHandler(LogHandler);
-void resetLogHandler();
+size_t log_haier(HaierLogLevel level, const char* format, ...);
+size_t log_haier_buffer(HaierLogLevel level, const char* header, const uint8_t* buffer, size_t size);
+void set_log_handler(LogHandler);
+void reset_log_handler();
 
 }
 #endif // HAIER_LOG_H

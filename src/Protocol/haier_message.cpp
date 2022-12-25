@@ -1,108 +1,99 @@
 ﻿#include <cstring>
-#include "Protocol/haier_message.h"
+#include "protocol/haier_message.h"
 
-namespace HaierProtocol
+namespace haier_protocol
 {
 
-HaierMessage::HaierMessage() noexcept :
-    HaierMessage(UNKNOWN_MESSAGE_TYPE, NO_SUBCOMMAND, nullptr, 0)
-{
-}
-
-HaierMessage::HaierMessage(uint8_t frameType) noexcept :
-    HaierMessage(frameType, NO_SUBCOMMAND, nullptr, 0)
+HaierMessage::HaierMessage() noexcept : HaierMessage(UNKNOWN_MESSAGE_TYPE, NO_SUBCOMMAND, nullptr, 0)
 {
 }
 
-HaierMessage::HaierMessage(uint8_t frameType, uint16_t subcommand) noexcept :
-    HaierMessage(frameType, subcommand, nullptr, 0)
+HaierMessage::HaierMessage(uint8_t frame_type) noexcept : HaierMessage(frame_type, NO_SUBCOMMAND, nullptr, 0)
 {
 }
 
-HaierMessage::HaierMessage(uint8_t frameType, const uint8_t* data, size_t dataSize) noexcept :
-    HaierMessage(frameType, NO_SUBCOMMAND, data, dataSize)
+HaierMessage::HaierMessage(uint8_t frame_type, uint16_t subcommand) noexcept : HaierMessage(frame_type, subcommand, nullptr, 0)
 {
 }
 
-HaierMessage::HaierMessage(uint8_t frameType, uint16_t subcommand, const uint8_t* data, size_t dataSize) noexcept :
-    mFrameType(frameType),
-    mSubcommand(subcommand),
-    mDataSize(dataSize),
-    mData(nullptr)
+HaierMessage::HaierMessage(uint8_t frame_type, const uint8_t *data, size_t data_size) noexcept : HaierMessage(frame_type, NO_SUBCOMMAND, data, data_size)
 {
-    if ((data != nullptr) && (dataSize != 0))
-    {
-        mData = new uint8_t[mDataSize];
-        memcpy(mData, data, mDataSize);
-    }
-    else
-        mDataSize = 0;
 }
 
-HaierMessage::HaierMessage(const HaierMessage& source) noexcept :
-    mFrameType(source.mFrameType),
-    mSubcommand(source.mSubcommand),
-    mDataSize(source.mDataSize)
+HaierMessage::HaierMessage(uint8_t frame_type, uint16_t subcommand, const uint8_t *data, size_t data_size) : frame_type_(frame_type),
+  subcommand_(subcommand),
+  data_size_(data_size),
+  data_(nullptr)
 {
-    mData = new uint8_t[mDataSize];
-    memcpy(mData, source.mData, mDataSize);
+  if ((data != nullptr) && (data_size != 0))
+  {
+    this->data_ = new uint8_t[data_size_];
+    memcpy(this->data_, data, this->data_size_);
+  }
+  else
+    this->data_size_ = 0;
 }
 
-HaierMessage::HaierMessage(HaierMessage&& source) noexcept :
-    mFrameType(source.mFrameType),
-    mSubcommand(source.mSubcommand),
-    mDataSize(source.mDataSize),
-    mData(source.mData)
+HaierMessage::HaierMessage(const HaierMessage &source) : frame_type_(source.frame_type_),
+  subcommand_(source.subcommand_),
+  data_size_(source.data_size_)
 {
-    source.mData = nullptr;
+  this->data_ = new uint8_t[this->data_size_];
+  memcpy(this->data_, source.data_, this->data_size_);
+}
+
+HaierMessage::HaierMessage(HaierMessage &&source) noexcept : frame_type_(source.frame_type_),
+  subcommand_(source.subcommand_),
+  data_size_(source.data_size_),
+  data_(source.data_)
+{
+  source.data_ = nullptr;
 }
 
 HaierMessage::~HaierMessage() noexcept
 {
-    if (mData != nullptr)
-        delete[] mData;
+  delete[] this->data_;
 }
 
-HaierMessage& HaierMessage::operator=(const HaierMessage& source) noexcept
+HaierMessage &HaierMessage::operator=(const HaierMessage &source)
 {
-    if (this != &source)
-    {
-        mFrameType = source.mFrameType;
-        mSubcommand = source.mSubcommand;
-        mDataSize = source.mDataSize;
-        mData = new uint8_t[mDataSize];
-        memcpy(mData, source.mData, mDataSize);
-    }
-    return *this;
+  if (this != &source)
+  {
+    this->frame_type_ = source.frame_type_;
+    this->subcommand_ = source.subcommand_;
+    this->data_size_ = source.data_size_;
+    this->data_ = new uint8_t[data_size_];
+    memcpy(this->data_, source.data_, this->data_size_);
+  }
+  return *this;
 }
 
-HaierMessage& HaierMessage::operator=(HaierMessage&& source) noexcept
+HaierMessage &HaierMessage::operator=(HaierMessage &&source) noexcept
 {
-    if (this != &source)
-    {
-        mFrameType = source.mFrameType;
-        mSubcommand = source.mSubcommand;
-        mDataSize = source.mDataSize;
-        mData = source.mData;
-        source.mData = nullptr;
-    }
-    return *this;
-
+  if (this != &source)
+  {
+    this->frame_type_ = source.frame_type_;
+    this->subcommand_ = source.subcommand_;
+    this->data_size_ = source.data_size_;
+    this->data_ = source.data_;
+    source.data_ = nullptr;
+  }
+  return *this;
 }
 
-size_t HaierMessage::fillBuffer(uint8_t* const buffer, size_t limit) const
+size_t HaierMessage::fill_buffer(uint8_t *const buffer, size_t limit) const
 {
-    if (getBuferSize() > limit)
-        return 0;
-    size_t pos = 0;
-    if (mSubcommand != NO_SUBCOMMAND)
-    {
-        buffer[pos++] = mSubcommand >> 8;
-        buffer[pos++] = mSubcommand & 0xFF;
-    }
-    if (mDataSize > 0)
-        memcpy(buffer + pos, mData, mDataSize);
-    return pos + mDataSize;
+  if (this->get_bufer_size() > limit)
+    return 0;
+  size_t pos = 0;
+  if (this->subcommand_ != NO_SUBCOMMAND)
+  {
+    buffer[pos++] = this->subcommand_ >> 8;
+    buffer[pos++] = this->subcommand_ & 0xFF;
+  }
+  if (this->data_size_ > 0)
+    memcpy(buffer + pos, this->data_, this->data_size_);
+  return pos + this->data_size_;
 }
 
-} // HaierProtocol
+} // haier_protocol

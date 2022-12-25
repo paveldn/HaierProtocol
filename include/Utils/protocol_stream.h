@@ -2,7 +2,7 @@
 #define PROTOCOL_STREAM_H
 #define abstract 
 
-namespace HaierProtocol
+namespace haier_protocol
 {
 
 abstract class ProtocolStream

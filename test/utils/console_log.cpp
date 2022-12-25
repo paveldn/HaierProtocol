@@ -6,7 +6,7 @@
 
 #define BUFFER_SIZE	4096
 
-void console_logger(HaierProtocol::HaierLogLevel level, const char* tag, const char* format, ...)
+void console_logger(haier_protocol::HaierLogLevel level, const char* tag, const char* format, ...)
 {
 #ifdef _WIN32
     constexpr uint16_t ll2color[] =
@@ -32,7 +32,7 @@ void console_logger(HaierProtocol::HaierLogLevel level, const char* tag, const c
 
     };
     static char msg_buffer[BUFFER_SIZE];
-    if (level == HaierProtocol::HaierLogLevel::llNone)
+    if (level == haier_protocol::HaierLogLevel::LEVEL_NONE)
         return;
     va_list args;
     va_start(args, format);

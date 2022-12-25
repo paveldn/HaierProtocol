@@ -1,8 +1,8 @@
 ﻿#ifndef CONSOLE_LOG
 #define CONSOLE_LOG
-#include "Utils/haier_log.h"
+#include "utils/haier_log.h"
 
-void console_logger(HaierProtocol::HaierLogLevel level, const char* tag, const char* format, ...);
+void console_logger(haier_protocol::HaierLogLevel level, const char* tag, const char* format, ...);
 
 
 #endif // CONSOLE_LOG

@@ -12,10 +12,10 @@ project(${LIB_NAME} VERSION ${LIB_VERSION}
 
 include_directories("${CMAKE_CURRENT_SOURCE_DIR}/include")
 
-list(APPEND SOURCE_FILES "${CMAKE_CURRENT_SOURCE_DIR}/src/Protocol/haier_message.cpp")
-list(APPEND SOURCE_FILES "${CMAKE_CURRENT_SOURCE_DIR}/src/Protocol/haier_protocol.cpp")
-list(APPEND SOURCE_FILES "${CMAKE_CURRENT_SOURCE_DIR}/src/Transport/haier_frame.cpp")
-list(APPEND SOURCE_FILES "${CMAKE_CURRENT_SOURCE_DIR}/src/Transport/protocol_transport.cpp")
-list(APPEND SOURCE_FILES "${CMAKE_CURRENT_SOURCE_DIR}/src/Utils/haier_log.cpp")
+list(APPEND SOURCE_FILES "${CMAKE_CURRENT_SOURCE_DIR}/src/protocol/haier_message.cpp")
+list(APPEND SOURCE_FILES "${CMAKE_CURRENT_SOURCE_DIR}/src/protocol/haier_protocol.cpp")
+list(APPEND SOURCE_FILES "${CMAKE_CURRENT_SOURCE_DIR}/src/transport/haier_frame.cpp")
+list(APPEND SOURCE_FILES "${CMAKE_CURRENT_SOURCE_DIR}/src/transport/protocol_transport.cpp")
+list(APPEND SOURCE_FILES "${CMAKE_CURRENT_SOURCE_DIR}/src/utils/haier_log.cpp")
 
 add_library("${LIB_NAME}" STATIC "${SOURCE_FILES}")

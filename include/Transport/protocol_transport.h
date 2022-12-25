@@ -3,12 +3,12 @@
 #include <stdint.h>
 #include <chrono>
 #include <queue>
-#include "Utils/haier_log.h"
-#include "Utils/circular_buffer.h"
-#include "Utils/protocol_stream.h"
-#include "Transport/haier_frame.h"
+#include "utils/haier_log.h"
+#include "utils/circular_buffer.h"
+#include "utils/protocol_stream.h"
+#include "transport/haier_frame.h"
 
-namespace HaierProtocol
+namespace haier_protocol
 {
 
 struct TimestampedFrame
@@ -17,34 +17,31 @@ struct TimestampedFrame
     std::chrono::steady_clock::time_point timestamp;
 };
 
-// Not thread safe!
 class TransportLevelHandler
 {
 public:
     TransportLevelHandler(const TransportLevelHandler&) = delete;
     TransportLevelHandler& operator=(const TransportLevelHandler&) = delete;
-    TransportLevelHandler(TransportLevelHandler&&) noexcept;
-    explicit TransportLevelHandler(ProtocolStream& stream, size_t bufferSize = MAX_FRAME_SIZE + 0x10) noexcept;
-    uint8_t sendData(uint8_t frameType, const uint8_t* data, size_t dataSize, bool useCrc=true);
-    size_t readData();
-    void processData();
-    size_t available() const noexcept { return mIncommingQueue.size(); };
+    explicit TransportLevelHandler(ProtocolStream& stream, size_t buffer_size = MAX_FRAME_SIZE + 0x10) noexcept;
+    uint8_t send_data(uint8_t frameType, const uint8_t* data, size_t data_size, bool use_crc=true);
+    size_t read_data();
+    void process_data();
+    size_t available() const noexcept { return this->incomming_queue_.size(); };
     bool pop(TimestampedFrame& tframe);
-    void drop(size_t framesCount);
-    void resetProtocol() noexcept;
+    void drop(size_t frames_count);
+    void reset_protocol() noexcept;
     virtual ~TransportLevelHandler();
 protected:
-    void clear();
-    void dropBytes(size_t size);
-private:
-    ProtocolStream&                 mStream;
-    CircularBuffer<uint8_t>         mBuffer;
-    size_t                          mPos;
-    size_t                          mSepCount;
-    bool                            mFrameStartFound;
-    HaierFrame                      mCurrentFrame;
-    std::chrono::steady_clock::time_point   mFrameStart;
-    std::queue<TimestampedFrame>    mIncommingQueue;
+    void clear_();
+    void drop_bytes_(size_t size);
+    ProtocolStream&                 stream_;
+    CircularBuffer<uint8_t>         buffer_;
+    size_t                          pos_;
+    size_t                          sep_count_;
+    bool                            frame_start_found_;
+    HaierFrame                      current_frame_;
+    std::chrono::steady_clock::time_point   frame_start_;
+    std::queue<TimestampedFrame>    incomming_queue_;
 };
 
 } // HaierProtocol
