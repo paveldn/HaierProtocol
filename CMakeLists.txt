@@ -10,7 +10,7 @@ project(${LIB_NAME} VERSION ${LIB_VERSION}
                     DESCRIPTION ${LIB_DESCRIPTION}
                     HOMEPAGE_URL ${LIB_URL})
 
-include_directories("${CMAKE_CURRENT_SOURCE_DIR}/include")
+include_directories("${CMAKE_CURRENT_SOURCE_DIR}/src")
 
 list(APPEND SOURCE_FILES "${CMAKE_CURRENT_SOURCE_DIR}/src/protocol/haier_message.cpp")
 list(APPEND SOURCE_FILES "${CMAKE_CURRENT_SOURCE_DIR}/src/protocol/haier_protocol.cpp")
