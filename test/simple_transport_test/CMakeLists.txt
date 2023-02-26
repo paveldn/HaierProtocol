@@ -9,7 +9,7 @@ set(LIB_ROOT "${CMAKE_CURRENT_SOURCE_DIR}/../..")
 add_compile_options(-DHAIER_LOG_LEVEL=5)
 add_compile_options(-DHAIER_LOG_TAG="haier")
 
-include_directories("${LIB_ROOT}/src")
+include_directories("${LIB_ROOT}/include")
 include_directories("${CMAKE_CURRENT_SOURCE_DIR}/../utils")
 
 list(APPEND SOURCE_FILES "${LIB_ROOT}/src/protocol/haier_message.cpp")

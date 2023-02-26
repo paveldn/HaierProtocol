@@ -1,6 +1,6 @@
 {
   "name": "HaierProtocol",
-  "version": "0.9.17",
+  "version": "0.9.18",
   "description": "A library to control Haier AC using serial protocol",
   "keywords": "haier, air-conditioner, uart, serial",
   "repository":
@@ -18,8 +18,8 @@
   {
     "include":
     [
-      "src/*.h",
-      "src/*/*.h",
+      "include/*.h",
+      "include/*/*.h",
       "src/*.cpp",
       "src/*/*.cpp"
     ]
