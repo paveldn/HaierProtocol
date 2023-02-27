@@ -1,8 +1,8 @@
 cmake_minimum_required(VERSION 3.19)
 
-set(TEST_NAME "hon_simulator")
+set(TEST_NAME "smmartair2_simulator")
 
-project(${TEST_NAME} VERSION "1.0.0" DESCRIPTION "hOn AC simulator")
+project(${TEST_NAME} VERSION "1.0.0" DESCRIPTION "smartAir2 AC simulator")
 
 set(LIB_ROOT "${CMAKE_CURRENT_SOURCE_DIR}/../..")
 
