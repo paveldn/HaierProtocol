@@ -19,6 +19,7 @@ haier_protocol::HandlerError status_request_handler(haier_protocol::ProtocolHand
       Sleep(30); // Simulate answer delay
       memcpy(state_buffer, &buffer[2], min(size - 2, sizeof(state_buffer)));
       protocol_handler->send_answer(haier_protocol::HaierMessage(CMD_STATUS_ANSWER, 0x6D5F, state_buffer, sizeof(state_buffer)));
+      return haier_protocol::HandlerError::HANDLER_OK;
     } else
       return haier_protocol::HandlerError::UNSUPPORTED_SUBCOMMAND;
   } else
@@ -42,7 +43,7 @@ void main(int argc, char** argv) {
         smartair2_handler.loop();
         Sleep(50);
     }
-	} else {
-		std::cout << "Please use: smartair2_simulator <port>" << std::endl;
-	}
+  } else {
+    std::cout << "Please use: smartair2_simulator <port>" << std::endl;
+  }
 }

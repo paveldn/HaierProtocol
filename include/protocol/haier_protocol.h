@@ -58,6 +58,7 @@ public:
     size_t get_outgoing_queue_size() const noexcept {return this->outgoing_messages_.size(); };
     void send_message(const HaierMessage& command, bool use_crc);
     void send_answer(const HaierMessage& answer);
+    void send_answer(const HaierMessage& answer, bool use_crc);
     void set_message_handler(uint8_t message_type, MessageHandler handler);
     void remove_message_handler(uint8_t message_type);
     void set_default_message_handler(MessageHandler handler);

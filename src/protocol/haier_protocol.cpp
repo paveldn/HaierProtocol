@@ -149,14 +149,19 @@ void ProtocolHandler::send_message(const HaierMessage &message, bool use_crc)
 
 void ProtocolHandler::send_answer(const HaierMessage &answer)
 {
-  if (this->processing_message_)
-  {
-    this->answer_sent_ = this->write_message_(answer, this->incomming_message_crc_status_);
-  }
-  else
-  {
-    HAIER_LOGE("Answer can be send only from message handler!");
-  }
+  this->send_answer(answer, this->incomming_message_crc_status_);
+}
+
+void ProtocolHandler::send_answer(const HaierMessage& answer, bool use_crc)
+{
+    if (this->processing_message_)
+    {
+        this->answer_sent_ = this->write_message_(answer, use_crc);
+    }
+    else
+    {
+        HAIER_LOGE("Answer can be send only from message handler!");
+    }
 }
 
 void ProtocolHandler::set_message_handler(uint8_t message_type, MessageHandler handler)
