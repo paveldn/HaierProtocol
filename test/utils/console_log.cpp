@@ -11,10 +11,10 @@ void console_logger(haier_protocol::HaierLogLevel level, const char* tag, const 
 #ifdef _WIN32
     constexpr uint16_t ll2color[] =
     {
-        0x07,       // 0llNone
+        0x07,       // llNone
         0x0C,       // llError
         0x0E,       // llWarning
-        0x0F,       // llInfo
+        0x0A,       // llInfo
         0x07,       // not used
         0x07,       // llDebug
         0x08,       // llVerbose

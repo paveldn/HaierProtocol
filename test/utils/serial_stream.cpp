@@ -9,8 +9,15 @@ SerailStream::SerailStream(const std::string& port_path) : buffer_(SERIAL_BUFFER
         serialParams.BaudRate = 9600;
         serialParams.ByteSize = 8;
         serialParams.StopBits = 1;
+        serialParams.fBinary = 1;
+        serialParams.fRtsControl = 0;
+        serialParams.fDtrControl = 0;
+        serialParams.XonLim = 2048;
+        serialParams.XoffLim = 512;
         serialParams.Parity = 0;
-
+        serialParams.XonChar = 17;
+        serialParams.XoffChar = 19;
+        serialParams.EofChar = 26;
         SetCommState(handle_, &serialParams);
         COMMTIMEOUTS timeout = { 0 };
         timeout.ReadIntervalTimeout = MAXDWORD;
