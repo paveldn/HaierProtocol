@@ -84,6 +84,9 @@ enum class FrameType : uint8_t {
   CONTROL = 0x01,
   STATUS = 0x02,
   INVALID = 0x03,
+  CONFIRM = 0x05,
+  GET_DEVICE_VERSION = 0x61,
+  REPORT_NETWORK_STATUS = 0xF7,
   NO_COMMAND = 0xFF,
 };
 

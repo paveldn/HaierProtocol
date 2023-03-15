@@ -12,6 +12,7 @@ using namespace esphome::haier::smartair2_protocol;
 
 HaierPacketControl ac_state;
 const haier_protocol::HaierMessage INVALID_MSG((uint8_t)FrameType::INVALID, 0x0000);
+const haier_protocol::HaierMessage CONFIRM_MSG((uint8_t)FrameType::CONFIRM);
 bool app_exiting{ false };
 
 void init_ac_state(HaierPacketControl& state) {
@@ -34,6 +35,29 @@ void init_ac_state(HaierPacketControl& state) {
   state.vertical_swing = 0;
   state.display_status = 0;
   state.set_point = 25 - 16;
+}
+
+haier_protocol::HandlerError report_network_status_handler(haier_protocol::ProtocolHandler* protocol_handler, uint8_t type, const uint8_t* buffer, size_t size) {
+  if (type == (uint8_t)FrameType::REPORT_NETWORK_STATUS) {
+    if (size == 4) {
+      protocol_handler->send_answer(CONFIRM_MSG);
+      return haier_protocol::HandlerError::HANDLER_OK;
+    }
+    else {
+      protocol_handler->send_answer(INVALID_MSG);
+      return haier_protocol::HandlerError::WRONG_MESSAGE_STRUCTURE;
+    }
+  }
+  else {
+    protocol_handler->send_answer(INVALID_MSG);
+    return haier_protocol::HandlerError::UNSUPORTED_MESSAGE;
+  }
+}
+
+haier_protocol::HandlerError get_device_version_handler(haier_protocol::ProtocolHandler* protocol_handler, uint8_t type, const uint8_t* buffer, size_t size) {
+  // Always answer invalid message
+  protocol_handler->send_answer(INVALID_MSG);
+  return haier_protocol::HandlerError::HANDLER_OK;
 }
 
 haier_protocol::HandlerError status_request_handler(haier_protocol::ProtocolHandler *protocol_handler, uint8_t type, const uint8_t* buffer, size_t size) {
@@ -87,6 +111,7 @@ void main(int argc, char** argv) {
     init_ac_state(ac_state);
     haier_protocol::ProtocolHandler smartair2_handler(serial_stream);
     smartair2_handler.set_message_handler((uint8_t)FrameType::CONTROL, std::bind(&status_request_handler, &smartair2_handler, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
+    smartair2_handler.set_message_handler((uint8_t)FrameType::REPORT_NETWORK_STATUS, std::bind(&report_network_status_handler, &smartair2_handler, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
     std::thread protocol_thread(std::bind(&protocol_loop, &smartair2_handler));
     SetConsoleTitle("SmartAir2 HVAC simulator, press ESC to exit");
     while ((console_wnd != GetForegroundWindow()) || ((GetKeyState(VK_ESCAPE) & 0x8000) == 0)) {
