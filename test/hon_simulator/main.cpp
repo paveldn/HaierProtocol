@@ -1,13 +1,9 @@
 ﻿#include <stdint.h>
-#include "utils/haier_log.h"
-#include "protocol/haier_protocol.h"
-#include "console_log.h"
-#include "serial_stream.h"  
+#include "simulator_base.h"
 #include "hon_packet.h"
 #include <iostream>
 #include <string>
-#include <thread>
-#include <conio.h>
+
 
 using namespace esphome::haier::hon_protocol;
 
@@ -21,7 +17,6 @@ bool toggle_pairing_mode{ false };
 bool toggle_ac_power{ false };
 const haier_protocol::HaierMessage INVALID_MSG((uint8_t)FrameType::INVALID, 0x0000);
 const haier_protocol::HaierMessage CONFIRM_MSG((uint8_t)FrameType::CONFIRM);
-bool app_exiting{ false };
 
 void init_ac_state(HvacFullStatus& state) {
   memset(&state, 0, sizeof(HvacFullStatus));
@@ -222,78 +217,53 @@ haier_protocol::HandlerError report_network_status_handler(haier_protocol::Proto
   }
 }
 
-void protocol_loop(haier_protocol::ProtocolHandler* handler) {
-  while (!app_exiting) {
-    static bool is_in_pairing_mode = false;
-    if (toggle_ac_power) {
-      toggle_ac_power = false;
-      uint8_t ac_power = ac_state.control.ac_power;
-      ac_state.control.ac_power = ac_power == 1 ? 0 : 1;
-      HAIER_LOGI("AC power is %s", ac_power == 1 ? "Off" : "On");
+void preloop(haier_protocol::ProtocolHandler* handler) {
+  static bool is_in_pairing_mode = false;
+  if (toggle_ac_power) {
+    toggle_ac_power = false;
+    uint8_t ac_power = ac_state.control.ac_power;
+    ac_state.control.ac_power = ac_power == 1 ? 0 : 1;
+    HAIER_LOGI("AC power is %s", ac_power == 1 ? "Off" : "On");
+  }
+  if (toggle_pairing_mode) {
+    toggle_pairing_mode = false;
+    if (is_in_pairing_mode) {
+      HAIER_LOGI("Entering working mode");
+      ac_state.control.ac_power = 0;
+      ac_state.control.vertical_swing_mode = (uint8_t)VerticalSwingMode::AUTO;
+      ac_state.control.fan_mode = (uint8_t)FanMode::FAN_LOW;
+      ac_state.control.set_point = 25 - 16;
+      static const haier_protocol::HaierMessage WORKING_MODE_MSG((uint8_t)FrameType::STOP_WIFI_CONFIGURATION, 0x0000);
+      handler->send_message(WORKING_MODE_MSG, true);
     }
-    if (toggle_pairing_mode) {
-      toggle_pairing_mode = false;
-      if (is_in_pairing_mode) {
-        HAIER_LOGI("Entering working mode");
-        ac_state.control.ac_power = 0;
-        ac_state.control.vertical_swing_mode = (uint8_t)VerticalSwingMode::AUTO;
-        ac_state.control.fan_mode = (uint8_t)FanMode::FAN_LOW;
-        ac_state.control.set_point = 25 - 16;
-        static const haier_protocol::HaierMessage WORKING_MODE_MSG((uint8_t)FrameType::STOP_WIFI_CONFIGURATION, 0x0000);
-        handler->send_message(WORKING_MODE_MSG, true);
-      } else {
-        HAIER_LOGI("Entering pairing mode");
-        ac_state.control.ac_power = 1;
-        ac_state.control.ac_mode = (uint8_t)ConditioningMode::COOL;
-        ac_state.control.set_point = 0x0E;
-        ac_state.control.vertical_swing_mode = 0x0A;
-        ac_state.control.fan_mode = (uint8_t)FanMode::FAN_LOW;
-        static const haier_protocol::HaierMessage CONFIGURATION_MODE_MSG((uint8_t)FrameType::START_WIFI_CONFIGURATION, 0x0000);
-        handler->send_message(CONFIGURATION_MODE_MSG, true);
-      }
-      is_in_pairing_mode = !is_in_pairing_mode;
+    else {
+      HAIER_LOGI("Entering pairing mode");
+      ac_state.control.ac_power = 1;
+      ac_state.control.ac_mode = (uint8_t)ConditioningMode::COOL;
+      ac_state.control.set_point = 0x0E;
+      ac_state.control.vertical_swing_mode = 0x0A;
+      ac_state.control.fan_mode = (uint8_t)FanMode::FAN_LOW;
+      static const haier_protocol::HaierMessage CONFIGURATION_MODE_MSG((uint8_t)FrameType::START_WIFI_CONFIGURATION, 0x0000);
+      handler->send_message(CONFIGURATION_MODE_MSG, true);
     }
-    handler->loop();
-    Sleep(3);
+    is_in_pairing_mode = !is_in_pairing_mode;
   }
 }
 
 void main(int argc, char** argv) {
   if (argc == 2) {
-    HWND console_wnd;
-    console_wnd = GetForegroundWindow();
-    haier_protocol::set_log_handler(console_logger);
-    SerailStream serial_stream(std::string("\\\\.\\").append(argv[1]).c_str());
-    if (!serial_stream.is_valid()) {
-      std::cout << "Can't open port " << argv[1] << std::endl;
-      return;
-    }
     init_ac_state(ac_state);
-    haier_protocol::ProtocolHandler hon_handler(serial_stream);
-    hon_handler.set_message_handler((uint8_t)FrameType::GET_DEVICE_VERSION, std::bind(&get_device_version_handler, &hon_handler, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
-    hon_handler.set_message_handler((uint8_t)FrameType::GET_DEVICE_ID, std::bind(&get_device_id_handler, &hon_handler, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
-    hon_handler.set_message_handler((uint8_t)FrameType::CONTROL, std::bind(&status_request_handler, &hon_handler, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
-    hon_handler.set_message_handler((uint8_t)FrameType::GET_ALARM_STATUS, std::bind(&alarm_status_handler, &hon_handler, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
-    hon_handler.set_message_handler((uint8_t)FrameType::GET_MANAGEMENT_INFORMATION, std::bind(&get_managment_information_handler, &hon_handler, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
-    hon_handler.set_message_handler((uint8_t)FrameType::REPORT_NETWORK_STATUS, std::bind(&report_network_status_handler, &hon_handler, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
-    std::thread protocol_thread(std::bind(&protocol_loop, &hon_handler));
-    SetConsoleTitle("hOn HVAC simulator, press ESC to exit");
-    while ((console_wnd != GetForegroundWindow()) || ((GetKeyState(VK_ESCAPE) & 0x8000) == 0)) {
-      if (kbhit()){
-        switch (getch()) {
-        case '1':
-          // toggle AC power
-          toggle_ac_power = true;
-          break;
-        case '2':
-          // toggle pairing mode
-          toggle_pairing_mode = true;
-        }
-      }
-      Sleep(50);
-    }
-    app_exiting = true;
-    protocol_thread.join();
+    message_handlers mhandlers;
+    mhandlers[(uint8_t)FrameType::GET_DEVICE_VERSION] = get_device_version_handler;
+    mhandlers[(uint8_t)FrameType::GET_DEVICE_ID] = get_device_id_handler;
+    mhandlers[(uint8_t)FrameType::CONTROL] = status_request_handler;
+    mhandlers[(uint8_t)FrameType::GET_ALARM_STATUS] = alarm_status_handler;
+    mhandlers[(uint8_t)FrameType::GET_MANAGEMENT_INFORMATION] = get_managment_information_handler;
+    mhandlers[(uint8_t)FrameType::REPORT_NETWORK_STATUS] = report_network_status_handler;
+    keyboard_handlers khandlers;
+    khandlers['1'] = []() { toggle_ac_power = true; };
+    khandlers['2'] = []() { toggle_pairing_mode = true; };
+    simulator_main("hOn HVAC simulator", argv[1], mhandlers, khandlers, preloop);
   }
   else {
     std::cout << "Please use: hon_simulator <port>" << std::endl;

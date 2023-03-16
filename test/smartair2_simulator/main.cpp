@@ -1,20 +1,14 @@
 ﻿#include <stdint.h>
-#include "utils/haier_log.h"
-#include "protocol/haier_protocol.h"
-#include "console_log.h"
-#include "serial_stream.h"  
+#include "simulator_base.h"
 #include "smartair2_packet.h"
-#include <iostream>
 #include <string>
-#include <thread>
-#include <conio.h>
+#include <iostream>
 
 using namespace esphome::haier::smartair2_protocol;
 
 HaierPacketControl ac_state;
 const haier_protocol::HaierMessage INVALID_MSG((uint8_t)FrameType::INVALID, 0x0000);
 const haier_protocol::HaierMessage CONFIRM_MSG((uint8_t)FrameType::CONFIRM);
-bool app_exiting{ false };
 bool toggle_ac_power{ false };
 
 void init_ac_state(HaierPacketControl& state) {
@@ -108,48 +102,24 @@ haier_protocol::HandlerError status_request_handler(haier_protocol::ProtocolHand
   }
 }
 
-void protocol_loop(haier_protocol::ProtocolHandler* handler) {
-  while (!app_exiting) {
-    if (toggle_ac_power) {
-      toggle_ac_power = false;
-      uint8_t ac_power = ac_state.ac_power;
-      ac_state.ac_power = ac_power == 1 ? 0 : 1;
-      HAIER_LOGI("AC power is %s", ac_power == 1 ? "Off" : "On");
-    }
-    handler->loop();
-    Sleep(3);
+void preloop(haier_protocol::ProtocolHandler* handler) {
+  if (toggle_ac_power) {
+    toggle_ac_power = false;
+    uint8_t ac_power = ac_state.ac_power;
+    ac_state.ac_power = ac_power == 1 ? 0 : 1;
+    HAIER_LOGI("AC power is %s", ac_power == 1 ? "Off" : "On");
   }
 }
 
 void main(int argc, char** argv) {
   if (argc == 2) {
-    HWND console_wnd;
-    console_wnd = GetForegroundWindow();
-    haier_protocol::set_log_handler(console_logger);
-    SerailStream serial_stream(std::string("\\\\.\\").append(argv[1]).c_str());
-    if (!serial_stream.is_valid()) {
-        std::cout << "Can't open port " << argv[1] << std::endl;
-        return;
-    }
     init_ac_state(ac_state);
-    haier_protocol::ProtocolHandler smartair2_handler(serial_stream);
-    smartair2_handler.set_message_handler((uint8_t)FrameType::CONTROL, std::bind(&status_request_handler, &smartair2_handler, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
-    smartair2_handler.set_message_handler((uint8_t)FrameType::REPORT_NETWORK_STATUS, std::bind(&report_network_status_handler, &smartair2_handler, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
-    std::thread protocol_thread(std::bind(&protocol_loop, &smartair2_handler));
-    SetConsoleTitle("SmartAir2 HVAC simulator, press ESC to exit");
-    while ((console_wnd != GetForegroundWindow()) || ((GetKeyState(VK_ESCAPE) & 0x8000) == 0)) {
-      if (kbhit()) {
-        switch (getch()) {
-        case '1':
-          // toggle AC power
-          toggle_ac_power = true;
-          break;
-        }
-      }
-      Sleep(50);
-    }
-    app_exiting = true;
-    protocol_thread.join();
+    message_handlers mhandlers;
+    mhandlers[(uint8_t) FrameType::CONTROL] = status_request_handler;
+    mhandlers[(uint8_t) FrameType::REPORT_NETWORK_STATUS] = report_network_status_handler;
+    keyboard_handlers khandlers;
+    khandlers['1'] = []() { toggle_ac_power = true; };
+    simulator_main("SmartAir2 HVAC simulator", argv[1], mhandlers, khandlers, preloop);
   } else {
     std::cout << "Please use: smartair2_simulator <port>" << std::endl;
   }
