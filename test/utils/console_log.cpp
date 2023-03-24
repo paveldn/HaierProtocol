@@ -1,4 +1,5 @@
 ﻿#include <iostream>
+#include <chrono>
 #ifdef _WIN32
 #include <windows.h>
 #include <WinUser.h>
@@ -7,6 +8,19 @@
 #include "console_log.h"
 
 #define BUFFER_SIZE	4096
+
+// Test counters
+unsigned int warnings_counter{ 0 };
+unsigned int errors_counter{ 0 };
+
+unsigned int get_warnings_counter() {
+    return warnings_counter;
+}
+
+unsigned int get_errors_counter() {
+    return errors_counter;
+}
+
 
 void console_logger(haier_protocol::HaierLogLevel level, const char* tag, const char* format, ...)
 {
@@ -36,7 +50,13 @@ void console_logger(haier_protocol::HaierLogLevel level, const char* tag, const 
     static char msg_buffer[BUFFER_SIZE];
     if (level == haier_protocol::HaierLogLevel::LEVEL_NONE)
         return;
-    int len = snprintf(msg_buffer, BUFFER_SIZE, "[%c][%s]: ", ll2tag[(uint8_t)level], tag);
+    if (level == haier_protocol::HaierLogLevel::LEVEL_WARNING)
+        warnings_counter++;
+    if (level == haier_protocol::HaierLogLevel::LEVEL_ERROR)
+        errors_counter++;
+    std::time_t now = std::time(nullptr);
+    std::tm local_now = *std::localtime(&now);
+    int len = snprintf(msg_buffer, BUFFER_SIZE, "[%02d:%02d:%02d][%c][%s]: ", local_now.tm_hour, local_now.tm_min, local_now.tm_sec, ll2tag[(uint8_t)level], tag);
     if (len < 0) {
       std::cout << "error writing message!" << std::endl;
       return;
