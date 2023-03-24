@@ -13,11 +13,11 @@
 unsigned int warnings_counter{ 0 };
 unsigned int errors_counter{ 0 };
 
-unsigned int get_warnings_counter() {
+unsigned int get_warnings_count() {
     return warnings_counter;
 }
 
-unsigned int get_errors_counter() {
+unsigned int get_errors_count() {
     return errors_counter;
 }
 
