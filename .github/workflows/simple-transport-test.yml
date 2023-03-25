@@ -1,4 +1,4 @@
-name: CMake
+name: simple-transport-test
 
 on:
   push:
