@@ -1,0 +1,31 @@
+name: build CI test
+
+on:
+  push:
+  pull_request:
+    branches: [ "main" ]
+
+env:
+  BUILD_TYPE: Release
+
+jobs:
+  tests:
+    name: Building ${{ matrix.file }}
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        test_name:
+          - simple_transport_test
+          - hon_test
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+    - name: Configure CMake
+      run: cmake -B ${{github.workspace}}/test/${{ matrix.test_name }}/bin -S ${{github.workspace}}/test/${{ matrix.test_name }} -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}}
+    - name: Build CMake
+      run: cmake --build ${{github.workspace}}/test/${{ matrix.test_name }}/bin --config ${{env.BUILD_TYPE}}
+    - name: Run test
+      working-directory: ${{github.workspace}}/test/${{ matrix.test_name }}/bin
+      run: ./${{ matrix.test_name }}
+
+
