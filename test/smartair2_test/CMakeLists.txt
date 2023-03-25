@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.19)
 
-set(TEST_NAME "smmartair2_test")
+set(TEST_NAME "smartair2_test")
 
 project(${TEST_NAME} VERSION "1.0.0" DESCRIPTION "smartAir2 protocol test")
 
