@@ -1,4 +1,5 @@
 #include <stdint.h>
+#include <iostream>
 #include "utils/circular_buffer.h"
 #include "utils/protocol_stream.h"
 #include "utils/haier_log.h"
@@ -129,5 +130,9 @@ int main()
 #endif
     HAIER_LOGI("Test finished");
     // Should be "Warnings: 1, errors: 0"
-    HAIER_LOGI("Warnings: %d, errors: %d", get_warnings_count(), get_errors_count());
+    unsigned int warn = get_warnings_count();
+	unsigned int  errors = get_errors_count();
+	std::cout << "Test results, warning: " << warn << " errors: " << errors << std::endl;
+	if ((warn != 1) || (errors != 0))
+		exit(1);
 }

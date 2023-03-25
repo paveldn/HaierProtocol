@@ -1,9 +1,8 @@
 ﻿#include <iostream>
 #include <chrono>
+#include <cstdarg>
 #ifdef _WIN32
 #include <windows.h>
-#include <WinUser.h>
-#include <wtypes.h>
 #endif
 #include "console_log.h"
 
@@ -24,18 +23,16 @@ unsigned int get_errors_count() {
 
 void console_logger(haier_protocol::HaierLogLevel level, const char* tag, const char* format, ...)
 {
-#ifdef _WIN32
-    constexpr uint16_t ll2color[] =
+    const std::string  ll2color[] =
     {
-        0x07,       // llNone
-        0x0C,       // llError
-        0x0E,       // llWarning
-        0x0A,       // llInfo
-        0x07,       // not used
-        0x07,       // llDebug
-        0x08,       // llVerbose
+      "\033[0m",    // llNone
+      "\033[91m",   // llError
+      "\033[93m",   // llWarning
+      "\033[32m",   // llInfo
+      "\033[0m",    // not used
+      "\033[37m",   // llDebug
+      "\033[90m",   // llVerbose
     };
-#endif
     constexpr char ll2tag[] =
     {
         '#',        // llNone
@@ -65,14 +62,7 @@ void console_logger(haier_protocol::HaierLogLevel level, const char* tag, const 
     va_start(args, format);
     vsnprintf(msg_buffer + len, BUFFER_SIZE - len - 1, format, args);
     va_end(args);
-#ifdef _WIN32
-    static HANDLE hConsole = GetStdHandle(STD_OUTPUT_HANDLE);
-    SetConsoleTextAttribute(hConsole, ll2color[(uint8_t)level]);
-#endif
-    std::cout << msg_buffer << std::endl;
-#ifdef _WIN32
-    SetConsoleTextAttribute(hConsole, 0x07);
-#endif
+    std::cout << ll2color[(uint8_t)level] << msg_buffer << "\033[0m" << std::endl;
 #ifdef _WIN32
     // DebugView++ message sending
     HWND debugviewpp_window = FindWindowA(NULL, "[Capture Win32 & Global Win32 Messages] - DebugView++");

@@ -1,10 +1,11 @@
-﻿#include "hon_server.h"
+﻿#include <cstring>
+#include "hon_server.h"
 #include "hon_packet.h"
 
 using namespace esphome::haier::hon_protocol;
 
 const uint8_t double_zero_bytes[]{ 0x00, 0x00 };
-HvacFullStatus ac_state;
+HvacFullStatus ac_status;
 const haier_protocol::HaierMessage INVALID_MSG((uint8_t)FrameType::INVALID, double_zero_bytes, 2);
 const haier_protocol::HaierMessage CONFIRM_MSG((uint8_t)FrameType::CONFIRM);
 uint8_t alarm_status_buf[] = {
@@ -67,9 +68,9 @@ HvacFullStatus& get_ac_state_ref() {
   static bool _first_run = true;
   if (_first_run) {
     _first_run = false;
-    init_ac_state(ac_state);
+    init_ac_state(ac_status);
   }
-  return ac_state;
+  return ac_status;
 }
 
 void trigger_random_alarm() {
@@ -141,14 +142,14 @@ haier_protocol::HandlerError status_request_handler(haier_protocol::ProtocolHand
         protocol_handler->send_answer(INVALID_MSG);
         return haier_protocol::HandlerError::WRONG_MESSAGE_STRUCTURE;
       }
-      protocol_handler->send_answer(haier_protocol::HaierMessage((uint8_t)FrameType::STATUS, 0x6D01, (uint8_t*)&ac_state, sizeof(HvacFullStatus)));
+      protocol_handler->send_answer(haier_protocol::HaierMessage((uint8_t)FrameType::STATUS, 0x6D01, (uint8_t*)&ac_status, sizeof(HvacFullStatus)));
       return haier_protocol::HandlerError::HANDLER_OK;
     case (uint16_t)SubcomandsControl::GET_BIG_DATA:
       if (size != 2) {
         protocol_handler->send_answer(INVALID_MSG);
         return haier_protocol::HandlerError::WRONG_MESSAGE_STRUCTURE;
       }
-      protocol_handler->send_answer(haier_protocol::HaierMessage((uint8_t)FrameType::STATUS, 0x6D01, (uint8_t*)&ac_state, sizeof(HvacFullStatus)));
+      protocol_handler->send_answer(haier_protocol::HaierMessage((uint8_t)FrameType::STATUS, 0x6D01, (uint8_t*)&ac_status, sizeof(HvacFullStatus)));
       return haier_protocol::HandlerError::HANDLER_OK;
     case (uint16_t)SubcomandsControl::SET_GROUP_PARAMETERS:
       if (size - 2 != sizeof(HaierPacketControl)) {
@@ -157,13 +158,13 @@ haier_protocol::HandlerError status_request_handler(haier_protocol::ProtocolHand
         return haier_protocol::HandlerError::WRONG_MESSAGE_STRUCTURE;
       }
       for (unsigned int i = 0; i < sizeof(HaierPacketControl); i++) {
-        uint8_t& cbyte = ((uint8_t*)&ac_state)[i];
+        uint8_t& cbyte = ((uint8_t*)&ac_status)[i];
         if (cbyte != buffer[2 + i]) {
           HAIER_LOGI("Byte #%d changed 0x%02X => 0x%02X", i, cbyte, buffer[2 + i]);
           cbyte = buffer[2 + i];
         }
       }
-      protocol_handler->send_answer(haier_protocol::HaierMessage((uint8_t)FrameType::STATUS, 0x6D5F, (uint8_t*)&ac_state, sizeof(HaierPacketControl)));
+      protocol_handler->send_answer(haier_protocol::HaierMessage((uint8_t)FrameType::STATUS, 0x6D5F, (uint8_t*)&ac_status, sizeof(HaierPacketControl)));
       return haier_protocol::HandlerError::HANDLER_OK;
     default:
       protocol_handler->send_answer(INVALID_MSG);
