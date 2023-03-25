@@ -19,6 +19,7 @@ list(APPEND SOURCE_FILES "${LIB_ROOT}/src/utils/haier_log.cpp")
 list(APPEND SOURCE_FILES "${CMAKE_CURRENT_SOURCE_DIR}/../utils/console_log.cpp")
 list(APPEND SOURCE_FILES "${CMAKE_CURRENT_SOURCE_DIR}/../utils/serial_stream.cpp")
 list(APPEND SOURCE_FILES "${CMAKE_CURRENT_SOURCE_DIR}/../utils/simulator_base.cpp")
+list(APPEND SOURCE_FILES "${CMAKE_CURRENT_SOURCE_DIR}/../utils/smartair2_server.cpp")
 list(APPEND SOURCE_FILES "${CMAKE_CURRENT_SOURCE_DIR}/main.cpp")
 
 add_executable("${TEST_NAME}" "${SOURCE_FILES}")

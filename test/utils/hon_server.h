@@ -2,7 +2,7 @@
 
 #include <stdint.h>
 #include "protocol/haier_protocol.h"
- #include "hon_packet.h"
+#include "hon_packet.h"
 
 struct HvacFullStatus {
   esphome::haier::hon_protocol::HaierPacketControl control;

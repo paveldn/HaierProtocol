@@ -1,8 +1,8 @@
 cmake_minimum_required(VERSION 3.19)
 
-set(TEST_NAME "hon_test")
+set(TEST_NAME "smmartair2_test")
 
-project(${TEST_NAME} VERSION "1.0.0" DESCRIPTION "hOn protocol test")
+project(${TEST_NAME} VERSION "1.0.0" DESCRIPTION "smartAir2 protocol test")
 
 set(LIB_ROOT "${CMAKE_CURRENT_SOURCE_DIR}/../..")
 
@@ -18,7 +18,7 @@ list(APPEND SOURCE_FILES "${LIB_ROOT}/src/transport/protocol_transport.cpp")
 list(APPEND SOURCE_FILES "${LIB_ROOT}/src/utils/haier_log.cpp")
 list(APPEND SOURCE_FILES "${CMAKE_CURRENT_SOURCE_DIR}/../utils/console_log.cpp")
 list(APPEND SOURCE_FILES "${CMAKE_CURRENT_SOURCE_DIR}/../utils/virtual_stream.cpp")
-list(APPEND SOURCE_FILES "${CMAKE_CURRENT_SOURCE_DIR}/../utils/hon_server.cpp")
+list(APPEND SOURCE_FILES "${CMAKE_CURRENT_SOURCE_DIR}/../utils/smartair2_server.cpp")
 list(APPEND SOURCE_FILES "${CMAKE_CURRENT_SOURCE_DIR}/main.cpp")
 
 add_executable("${TEST_NAME}" "${SOURCE_FILES}")
