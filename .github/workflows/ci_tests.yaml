@@ -1,4 +1,4 @@
-name: build CI test
+name: run CI tests
 
 on:
   push:
@@ -10,7 +10,7 @@ env:
 
 jobs:
   tests:
-    name: Building ${{ matrix.file }}
+    name: Executing ${{ matrix.test_name }}
     runs-on: ubuntu-latest
     strategy:
       matrix:
