@@ -8,6 +8,7 @@
 using namespace esphome::haier::hon_protocol;
 HvacFullStatus& ac_state = get_ac_state_ref();
 
+
 bool _toggle_pairing_mode{ false };
 bool _toggle_ac_power{ false };
 bool _trigger_random_alarm{ false };
@@ -27,7 +28,7 @@ void preloop(haier_protocol::ProtocolHandler* handler) {
       ac_state.control.ac_power = 0;
       ac_state.control.vertical_swing_mode = (uint8_t)VerticalSwingMode::AUTO;
       ac_state.control.fan_mode = (uint8_t)FanMode::FAN_LOW;
-      ac_state.control.set_point = 25 - 16;
+      ac_state.control.set_point = 22 - 16;
       uint8_t cmd_buf[] = { 0x00, 0x00 };
       static const haier_protocol::HaierMessage WORKING_MODE_MSG((uint8_t)FrameType::STOP_WIFI_CONFIGURATION, cmd_buf, 2);
       handler->send_message(WORKING_MODE_MSG, true);
@@ -40,8 +41,8 @@ void preloop(haier_protocol::ProtocolHandler* handler) {
       ac_state.control.vertical_swing_mode = 0x0A;
       ac_state.control.fan_mode = (uint8_t)FanMode::FAN_LOW;
       uint8_t cmd_buf[] = {0x00, 0x00 };
-      static const haier_protocol::HaierMessage CONFIGURATION_MODE_MSG((uint8_t)FrameType::START_WIFI_CONFIGURATION, cmd_buf, 2);
-      handler->send_message(CONFIGURATION_MODE_MSG, true);
+      //static const haier_protocol::HaierMessage CONFIGURATION_MODE_MSG((uint8_t)FrameType::START_WIFI_CONFIGURATION, cmd_buf, 2);
+      //handler->send_message(CONFIGURATION_MODE_MSG, true);
     }
     is_in_pairing_mode = !is_in_pairing_mode;
   }

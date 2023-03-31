@@ -11,6 +11,7 @@ const haier_protocol::HaierMessage CONFIRM_MSG((uint8_t)FrameType::CONFIRM);
 uint8_t alarm_status_buf[] = {
   0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 // Alarm mask (no alarms)
 };
+uint8_t communication_status{ 0xFF };
 
 void init_ac_state(HvacFullStatus& state) {
   memset(&state, 0, sizeof(HvacFullStatus));
@@ -166,6 +167,26 @@ haier_protocol::HandlerError status_request_handler(haier_protocol::ProtocolHand
       }
       protocol_handler->send_answer(haier_protocol::HaierMessage((uint8_t)FrameType::STATUS, 0x6D5F, (uint8_t*)&ac_status, sizeof(HaierPacketControl)));
       return haier_protocol::HandlerError::HANDLER_OK;
+    case ((uint16_t)SubcomandsControl::SET_SINGLE_PARAMETER) + 1:
+      if (size - 2 != 2) {
+        HAIER_LOGW("Wrong control packet size, expected 2, received %d", size - 2);
+        protocol_handler->send_answer(INVALID_MSG);
+        return haier_protocol::HandlerError::WRONG_MESSAGE_STRUCTURE;
+      }
+      if (buffer[3] == 0) {
+        HAIER_LOGI("AC power turned Off");
+        ac_status.control.ac_power = 0;
+        protocol_handler->send_answer(haier_protocol::HaierMessage((uint8_t)FrameType::STATUS, 0x6D01, (uint8_t*)&ac_status, sizeof(HaierPacketControl)));
+        return haier_protocol::HandlerError::HANDLER_OK;
+      }
+      else if (buffer[3] == 1) {
+        HAIER_LOGI("AC power turned On");
+        ac_status.control.ac_power = 1;
+        protocol_handler->send_answer(haier_protocol::HaierMessage((uint8_t)FrameType::STATUS, 0x6D01, (uint8_t*)&ac_status, sizeof(HaierPacketControl)));
+        return haier_protocol::HandlerError::HANDLER_OK;
+      }
+      protocol_handler->send_answer(INVALID_MSG);
+      return haier_protocol::HandlerError::UNSUPPORTED_SUBCOMMAND;
     default:
       protocol_handler->send_answer(INVALID_MSG);
       return haier_protocol::HandlerError::UNSUPPORTED_SUBCOMMAND;
@@ -216,6 +237,27 @@ haier_protocol::HandlerError get_managment_information_handler(haier_protocol::P
 haier_protocol::HandlerError report_network_status_handler(haier_protocol::ProtocolHandler* protocol_handler, uint8_t type, const uint8_t* buffer, size_t size) {
   if (type == (uint8_t)FrameType::REPORT_NETWORK_STATUS) {
     if (size == 4) {
+      uint8_t st = buffer[1];
+      if (st != communication_status) {
+        switch (st) {
+        case 0:
+          HAIER_LOGI("Network status: Communication is normal");
+          break;
+        case 1:
+          HAIER_LOGI("Network status:  No connection");
+          break;
+        case 2:
+          HAIER_LOGI("Network status:  Server unaviable");
+          break;
+        case 3:
+          HAIER_LOGI("Network status:  module is in configuration mode");
+          break;
+        default:
+          HAIER_LOGW("Network status:  Unknown status 0x02X", st);
+          break;
+        }
+        communication_status = st;
+      }
       protocol_handler->send_answer(CONFIRM_MSG);
       return haier_protocol::HandlerError::HANDLER_OK;
     } else {
