@@ -6,6 +6,7 @@ using namespace esphome::haier::hon_protocol;
 
 const uint8_t double_zero_bytes[]{ 0x00, 0x00 };
 HvacFullStatus ac_status;
+bool config_mode{ false };
 const haier_protocol::HaierMessage INVALID_MSG((uint8_t)FrameType::INVALID, double_zero_bytes, 2);
 const haier_protocol::HaierMessage CONFIRM_MSG((uint8_t)FrameType::CONFIRM);
 uint8_t alarm_status_buf[] = {
@@ -63,6 +64,10 @@ void init_ac_state(HvacFullStatus& state) {
   state.sensors.ch2o_value = 0;
   state.sensors.voc_value = 0;
   state.sensors.co2_value = 0;
+}
+
+bool is_in_configuration_mode() {
+  return config_mode;
 }
 
 HvacFullStatus& get_ac_state_ref() {
@@ -238,6 +243,9 @@ haier_protocol::HandlerError report_network_status_handler(haier_protocol::Proto
   if (type == (uint8_t)FrameType::REPORT_NETWORK_STATUS) {
     if (size == 4) {
       uint8_t st = buffer[1];
+      config_mode = st == 3;
+      if (!config_mode && (ac_status.control.set_point == 0x0E))
+        ac_status.control.set_point = 0x0D;
       if (st != communication_status) {
         switch (st) {
         case 0:
@@ -247,10 +255,10 @@ haier_protocol::HandlerError report_network_status_handler(haier_protocol::Proto
           HAIER_LOGI("Network status:  No connection");
           break;
         case 2:
-          HAIER_LOGI("Network status:  Server unaviable");
+          HAIER_LOGI("Network status:  Server unavailable");
           break;
         case 3:
-          HAIER_LOGI("Network status:  module is in configuration mode");
+          HAIER_LOGI("Network status:  Module is in configuration mode");
           break;
         default:
           HAIER_LOGW("Network status:  Unknown status 0x02X", st);

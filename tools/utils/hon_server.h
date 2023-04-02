@@ -15,6 +15,8 @@ void trigger_random_alarm();
 
 void reset_alarms();
 
+bool is_in_configuration_mode();
+
 haier_protocol::HandlerError get_device_version_handler(haier_protocol::ProtocolHandler* protocol_handler, uint8_t type, const uint8_t* buffer, size_t size);
 
 haier_protocol::HandlerError get_device_id_handler(haier_protocol::ProtocolHandler* protocol_handler, uint8_t type, const uint8_t* buffer, size_t size);
