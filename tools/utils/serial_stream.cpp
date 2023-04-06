@@ -8,7 +8,6 @@ SerailStream::SerailStream(const std::string& port_path) : buffer_(SERIAL_BUFFER
         GetCommState(handle_, &serialParams);
         serialParams.BaudRate = 9600;
         serialParams.ByteSize = 8;
-        serialParams.StopBits = 1;
         serialParams.fBinary = 1;
         serialParams.fRtsControl = 0;
         serialParams.fDtrControl = 0;

@@ -12,6 +12,7 @@ HaierPacketControl& ac_state = get_ac_state_ref();
 const haier_protocol::HaierMessage INVALID_MSG((uint8_t)FrameType::INVALID, 0x0000);
 const haier_protocol::HaierMessage CONFIRM_MSG((uint8_t)FrameType::CONFIRM);
 bool toggle_ac_power{ false };
+bool start_pairing{ false };
 
 void preloop(haier_protocol::ProtocolHandler* handler) {
   if (toggle_ac_power) {
@@ -19,6 +20,14 @@ void preloop(haier_protocol::ProtocolHandler* handler) {
     uint8_t ac_power = ac_state.ac_power;
     ac_state.ac_power = ac_power == 1 ? 0 : 1;
     HAIER_LOGI("AC power is %s", ac_power == 1 ? "Off" : "On");
+  }
+  if (start_pairing) {
+    start_pairing = false;
+    ac_state.ac_power = 1;
+    ac_state.set_point = 14;
+    ac_state.ac_mode = (uint8_t) esphome::haier::smartair2_protocol::ConditioningMode::COOL;
+    ac_state.fan_mode = (uint8_t) esphome::haier::smartair2_protocol::FanMode::FAN_LOW;
+    HAIER_LOGI("Start pairing");
   }
 }
 
@@ -29,6 +38,7 @@ void main(int argc, char** argv) {
     mhandlers[(uint8_t) FrameType::REPORT_NETWORK_STATUS] = report_network_status_handler;
     keyboard_handlers khandlers;
     khandlers['1'] = []() { toggle_ac_power = true; };
+    khandlers['2'] = []() { start_pairing = true; };
     simulator_main("SmartAir2 HVAC simulator", argv[1], mhandlers, khandlers, preloop);
   } else {
     std::cout << "Please use: smartair2_simulator <port>" << std::endl;

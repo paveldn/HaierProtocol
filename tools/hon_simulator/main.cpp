@@ -78,6 +78,10 @@ void main(int argc, char** argv) {
     keyboard_handlers khandlers;
     khandlers['1'] = []() { _toggle_ac_power = true; };
     khandlers['2'] = []() { _enter_config_mode = true; };
+    khandlers['3'] = []() {
+      ac_state.control.self_cleaning_status = false;
+      ac_state.control.steri_clean = false; 
+    };
     khandlers['a'] = []() { _trigger_random_alarm = true; };
     simulator_main("hOn HVAC simulator", argv[1], mhandlers, khandlers, preloop);
   }
