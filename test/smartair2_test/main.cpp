@@ -64,7 +64,7 @@ int main(int argc, char** argv) {
 	std::this_thread::sleep_for(std::chrono::milliseconds(500));
 	{
 		const haier_protocol::HaierMessage status_request_message((uint8_t)FrameType::CONTROL, 0x4D01);
-		smartair2_client.send_message(status_request_message, true);
+		smartair2_client.send_message(status_request_message, false);
 		smartair2_client.loop();
 		smartair2_server.loop();
 		smartair2_client.loop();
@@ -74,7 +74,7 @@ int main(int argc, char** argv) {
 	{
 		const uint8_t wifi_status_data[4] = { 0x00, 0x01, 0x00, 0x37 };
 		haier_protocol::HaierMessage wifi_status_request((uint8_t)FrameType::REPORT_NETWORK_STATUS, wifi_status_data, sizeof(wifi_status_data));
-		smartair2_client.send_message(wifi_status_request, true);
+		smartair2_client.send_message(wifi_status_request, false);
 		smartair2_client.loop();
 		smartair2_server.loop();
 		smartair2_client.loop();
@@ -86,7 +86,7 @@ int main(int argc, char** argv) {
 		ac_full_state.ac_mode = (uint8_t)ConditioningMode::COOL;
 		ac_full_state.display_status = 0;
 		haier_protocol::HaierMessage control_message((uint8_t)FrameType::CONTROL, 0x4D5F, (uint8_t*)&ac_full_state, sizeof(HaierPacketControl));
-		smartair2_client.send_message(control_message, true);
+		smartair2_client.send_message(control_message, false);
 		smartair2_client.loop();
 		smartair2_server.loop();
 		smartair2_client.loop();
