@@ -56,7 +56,9 @@ public:
     ProtocolHandler& operator=(const ProtocolHandler&) = delete;
     explicit ProtocolHandler(ProtocolStream&) noexcept;
     size_t get_outgoing_queue_size() const noexcept {return this->outgoing_messages_.size(); };
-    void send_message(const HaierMessage& command, bool use_crc);
+    void send_message(const HaierMessage& message, bool use_crc);
+    void send_message(const HaierMessage& message, bool use_crc, long long answer_timeout_miliseconds);
+    void send_message(const HaierMessage& message, bool use_crc, std::chrono::milliseconds answer_timeout);
     void send_answer(const HaierMessage& answer);
     void send_answer(const HaierMessage& answer, bool use_crc);
     void set_message_handler(uint8_t message_type, MessageHandler handler);
@@ -76,7 +78,12 @@ protected:
         IDLE,
         WAIRING_FOR_ANSWER,
     };
-    using OutgoingQueueItem = std::pair<const HaierMessage, bool>;
+    struct OutgoingQueueItem
+    {
+        const HaierMessage message;
+        bool use_crc;
+        const std::chrono::milliseconds answer_timeout;
+    };
     using OutgoingQueue = std::queue<OutgoingQueueItem>;
     TransportLevelHandler                   transport_;
     std::map<uint8_t, MessageHandler>       message_handlers_map_;

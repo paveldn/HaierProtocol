@@ -6,8 +6,8 @@
 namespace haier_protocol
 {
 
-constexpr std::chrono::microseconds MESSAGE_COOLDOWN_INTERVAL = std::chrono::milliseconds(400);
-constexpr std::chrono::microseconds ANSWER_TIMEOUT = std::chrono::milliseconds(150);
+constexpr std::chrono::milliseconds MESSAGE_COOLDOWN_INTERVAL = std::chrono::milliseconds(400);
+constexpr std::chrono::milliseconds DEFAULT_ANSWER_TIMEOUT = std::chrono::milliseconds(150);
 
 ProtocolHandler::ProtocolHandler(ProtocolStream &stream) noexcept : transport_(stream),
   message_handlers_map_(),
@@ -74,11 +74,11 @@ void ProtocolHandler::loop()
         {
           // Ready to send next message
           OutgoingQueueItem &msg = this->outgoing_messages_.front();
-          if (this->write_message_(msg.first, msg.second))
+          if (this->write_message_(msg.message, msg.use_crc))
           {
-            this->last_message_type_ = msg.first.get_frame_type();
+            this->last_message_type_ = msg.message.get_frame_type();
             this->state_ = ProtocolState::WAIRING_FOR_ANSWER;
-            this->answer_timeout_ = now + ANSWER_TIMEOUT;
+            this->answer_timeout_ = now + msg.answer_timeout;
           }
           this->outgoing_messages_.pop();
         }
@@ -144,7 +144,17 @@ bool ProtocolHandler::write_message_(const HaierMessage &message, bool use_crc)
 
 void ProtocolHandler::send_message(const HaierMessage &message, bool use_crc)
 {
-  this->outgoing_messages_.push(OutgoingQueueItem(message, use_crc));
+  send_message(message, use_crc, DEFAULT_ANSWER_TIMEOUT);
+}
+
+void ProtocolHandler::send_message(const HaierMessage& message, bool use_crc, long long answer_timeout_miliseconds)
+{
+  send_message(message, use_crc, std::chrono::milliseconds(answer_timeout_miliseconds));
+}
+
+void ProtocolHandler::send_message(const HaierMessage& message, bool use_crc, std::chrono::milliseconds answer_timeout)
+{
+  this->outgoing_messages_.push({ message, use_crc, answer_timeout });
 }
 
 void ProtocolHandler::send_answer(const HaierMessage &answer)

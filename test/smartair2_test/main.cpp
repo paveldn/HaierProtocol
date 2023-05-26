@@ -55,7 +55,7 @@ int main(int argc, char** argv) {
 	{
 		uint8_t module_capabilities[2] = { 0b00000000, 0b00000111 };
 		const haier_protocol::HaierMessage device_version_request_message((uint8_t)FrameType::GET_DEVICE_VERSION, module_capabilities, sizeof(module_capabilities));
-		smartair2_client.send_message(device_version_request_message, false);
+		smartair2_client.send_message(device_version_request_message, false, 100);
 		smartair2_client.loop();
 		smartair2_server.loop();
 		smartair2_client.loop();
