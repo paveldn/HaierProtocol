@@ -209,7 +209,7 @@ void TransportLevelHandler::process_data()
               _header[19] = _p[1];
               HAIER_BUFD(_header, tmp_buf.get(), this->current_frame_.get_data_size());
 #endif
-              this->incomming_queue_.push(TimestampedFrame{std::move(this->current_frame_), frame_start_});
+              this->incoming_queue_.push(TimestampedFrame{std::move(this->current_frame_), frame_start_});
             }
             else
             {
@@ -256,20 +256,20 @@ void TransportLevelHandler::reset_protocol() noexcept
 
 bool TransportLevelHandler::pop(TimestampedFrame &tframe)
 {
-  if (this->incomming_queue_.empty())
+  if (this->incoming_queue_.empty())
     return false;
-  tframe = std::move(this->incomming_queue_.front());
-  this->incomming_queue_.pop();
+  tframe = std::move(this->incoming_queue_.front());
+  this->incoming_queue_.pop();
   return true;
 }
 
 void TransportLevelHandler::drop(size_t frames_count)
 {
-  size_t sz = this->incomming_queue_.size();
+  size_t sz = this->incoming_queue_.size();
   if (frames_count < sz)
     sz = frames_count;
   while (sz-- > 0)
-    this->incomming_queue_.pop();
+    this->incoming_queue_.pop();
 }
 
 TransportLevelHandler::~TransportLevelHandler()

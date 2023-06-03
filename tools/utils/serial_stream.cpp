@@ -1,6 +1,6 @@
 #include "serial_stream.h"
 
-SerailStream::SerailStream(const std::string& port_path) : buffer_(SERIAL_BUFFER_SIZE) {
+SerialStream::SerialStream(const std::string& port_path) : buffer_(SERIAL_BUFFER_SIZE) {
     handle_ = CreateFile(port_path.c_str(), GENERIC_READ | GENERIC_WRITE, 0, 0, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, 0);
     if (is_valid()) {
         DCB serialParams = { 0 };
@@ -28,12 +28,12 @@ SerailStream::SerailStream(const std::string& port_path) : buffer_(SERIAL_BUFFER
     }
 }
 
-SerailStream::~SerailStream() {
+SerialStream::~SerialStream() {
     if (is_valid())
         CloseHandle(handle_);
 }
 
-size_t SerailStream::available() noexcept {
+size_t SerialStream::available() noexcept {
     if (!is_valid())
         return 0;
     if (buffer_.empty())
@@ -48,7 +48,7 @@ size_t SerailStream::available() noexcept {
     }
     return buffer_.get_available();
 };
-size_t SerailStream::read_array(uint8_t* data, size_t len) noexcept {
+size_t SerialStream::read_array(uint8_t* data, size_t len) noexcept {
     if (!is_valid() || buffer_.empty())
         return 0;
     size_t av = buffer_.get_available();
@@ -56,7 +56,7 @@ size_t SerailStream::read_array(uint8_t* data, size_t len) noexcept {
         len = av;
     return buffer_.pop(data, len);
 }
-void SerailStream::write_array(const uint8_t* data, size_t len) noexcept {
+void SerialStream::write_array(const uint8_t* data, size_t len) noexcept {
     if (!is_valid())
         return;
     WriteFile(handle_, data, len, nullptr, nullptr);

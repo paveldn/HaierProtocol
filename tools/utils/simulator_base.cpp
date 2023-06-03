@@ -17,7 +17,7 @@ void protocol_loop(haier_protocol::ProtocolHandler* handler, protocol_preloop pl
 
 void simulator_main(const char* app_name, const char* port_name, message_handlers mhandlers, keyboard_handlers khandlers, protocol_preloop ploop) {
   haier_protocol::set_log_handler(console_logger);
-  SerailStream serial_stream(std::string("\\\\.\\").append(port_name).c_str());
+  SerialStream serial_stream(std::string("\\\\.\\").append(port_name).c_str());
   if (!serial_stream.is_valid()) {
     std::cout << "Can't open port " << port_name << std::endl;
     return;

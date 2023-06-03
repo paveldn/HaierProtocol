@@ -19,7 +19,7 @@ ProtocolHandler::ProtocolHandler(ProtocolStream &stream) noexcept : transport_(s
   default_timeout_handler_(default_timeout_handler),
   state_(ProtocolState::IDLE),
   processing_message_(false),
-  incomming_message_crc_status_(false),
+  incoming_message_crc_status_(false),
   answer_sent_(false),
   last_message_type_(UNKNOWN_MESSAGE_TYPE)
 {
@@ -48,7 +48,7 @@ void ProtocolHandler::loop()
         TimestampedFrame frame;
         this->transport_.pop(frame);
         uint8_t msg_type = frame.frame.get_frame_type();
-        this->incomming_message_crc_status_ = frame.frame.get_use_crc();
+        this->incoming_message_crc_status_ = frame.frame.get_use_crc();
         std::map<uint8_t, MessageHandler>::const_iterator handler = this->message_handlers_map_.find(msg_type);
         this->processing_message_ = true;
         this->answer_sent_ = false;
@@ -77,7 +77,7 @@ void ProtocolHandler::loop()
           if (this->write_message_(msg.message, msg.use_crc))
           {
             this->last_message_type_ = msg.message.get_frame_type();
-            this->state_ = ProtocolState::WAIRING_FOR_ANSWER;
+            this->state_ = ProtocolState::WAITING_FOR_ANSWER;
             this->answer_timeout_ = now + msg.answer_timeout;
           }
           this->outgoing_messages_.pop();
@@ -85,7 +85,7 @@ void ProtocolHandler::loop()
       }
     }
     break;
-  case ProtocolState::WAIRING_FOR_ANSWER:
+  case ProtocolState::WAITING_FOR_ANSWER:
     // Check for timeout, move to idle after timeout
     if ((std::chrono::steady_clock::now() > this->answer_timeout_))
     {
@@ -125,7 +125,7 @@ void ProtocolHandler::loop()
 
 bool ProtocolHandler::write_message_(const HaierMessage &message, bool use_crc)
 {
-  size_t buf_size = message.get_bufer_size();
+  size_t buf_size = message.get_buffer_size();
   bool is_success = true;
   if (buf_size == 0)
     is_success = this->transport_.send_data(message.get_frame_type(), nullptr, 0, use_crc) > 0;
@@ -159,7 +159,7 @@ void ProtocolHandler::send_message(const HaierMessage& message, bool use_crc, st
 
 void ProtocolHandler::send_answer(const HaierMessage &answer)
 {
-  this->send_answer(answer, this->incomming_message_crc_status_);
+  this->send_answer(answer, this->incoming_message_crc_status_);
 }
 
 void ProtocolHandler::send_answer(const HaierMessage& answer, bool use_crc)
@@ -229,7 +229,7 @@ void ProtocolHandler::set_default_timeout_handler(TimeoutHandler handler)
 }
 
 /// <summary>
-/// Default message handler, log everything and return heUnsuportedMessage
+/// Default message handler, log everything and return UNSUPPORTED_MESSAGE
 /// </summary>
 /// <param name="message_type">Type of incoming message</param>
 /// <param name="data">Incoming message data</param>
@@ -238,11 +238,11 @@ void ProtocolHandler::set_default_timeout_handler(TimeoutHandler handler)
 HandlerError default_message_handler(uint8_t message_type, const uint8_t *data, size_t data_size)
 {
   HAIER_LOGW("Unsupported message received: type %02X data: %s", message_type, data_size > 0 ? buf_to_hex(data, data_size).c_str() : "<empty>");
-  return HandlerError::UNSUPORTED_MESSAGE;
+  return HandlerError::UNSUPPORTED_MESSAGE;
 }
 
 /// <summary>
-/// Default message handler, log everything and return heUnsuportedMessage
+/// Default message handler, log everything and return UNSUPPORTED_MESSAGE
 /// </summary>
 /// <param name="requestType">Request that caused this answer</param>
 /// <param name="message_type">Type of incoming message</param>
@@ -252,11 +252,11 @@ HandlerError default_message_handler(uint8_t message_type, const uint8_t *data, 
 HandlerError default_answer_handler(uint8_t requestType, uint8_t message_type, const uint8_t *data, size_t data_size)
 {
   HAIER_LOGW("Unsupported answer to %02X received: type %02X data: %s", requestType, message_type, data_size > 0 ? buf_to_hex(data, data_size).c_str() : "<empty>");
-  return HandlerError::UNSUPORTED_MESSAGE;
+  return HandlerError::UNSUPPORTED_MESSAGE;
 }
 
 /// <summary>
-/// Default message handler, log everything and return heUnsuportedMessage
+/// Default message handler, log everything and return UNSUPPORTED_MESSAGE
 /// </summary>
 /// <param name="requestType">Request that caused timeout</param>
 /// <returns>Error code</returns>

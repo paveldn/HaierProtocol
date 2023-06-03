@@ -43,8 +43,8 @@ haier_protocol::HandlerError client_answers_handler(uint8_t message_type, uint8_
 int main(int argc, char** argv) {
 	VirtualStreamHolder stream_holder;
 	haier_protocol::set_log_handler(console_logger);
-	VirtualStream& server_stream = stream_holder.get_stream_referance(StreamDirection::DIRECTION_A);
-	VirtualStream& client_stream = stream_holder.get_stream_referance(StreamDirection::DIRECTION_B);
+	VirtualStream& server_stream = stream_holder.get_stream_reference(StreamDirection::DIRECTION_A);
+	VirtualStream& client_stream = stream_holder.get_stream_reference(StreamDirection::DIRECTION_B);
 	haier_protocol::ProtocolHandler smartair2_server(server_stream);
 	smartair2_server.set_message_handler((uint8_t)FrameType::GET_DEVICE_VERSION, std::bind(get_device_version_handler, &smartair2_server, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
 	smartair2_server.set_message_handler((uint8_t)FrameType::CONTROL, std::bind(status_request_handler, &smartair2_server, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));

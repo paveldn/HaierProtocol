@@ -1,5 +1,5 @@
-#ifndef HAIRER_PROTOCOL_H
-#define HAIRER_PROTOCOL_H
+#ifndef HAIER_PROTOCOL_H
+#define HAIER_PROTOCOL_H
 
 #include <cstdint>
 #include <chrono>
@@ -15,7 +15,7 @@ namespace haier_protocol
 enum class HandlerError
 {
     HANDLER_OK = 0,
-    UNSUPORTED_MESSAGE,
+    UNSUPPORTED_MESSAGE,
     UNEXPECTED_MESSAGE,
     UNSUPPORTED_SUBCOMMAND,
     WRONG_MESSAGE_STRUCTURE,
@@ -76,7 +76,7 @@ protected:
     enum class ProtocolState
     {
         IDLE,
-        WAIRING_FOR_ANSWER,
+        WAITING_FOR_ANSWER,
     };
     struct OutgoingQueueItem
     {
@@ -95,7 +95,7 @@ protected:
     TimeoutHandler                          default_timeout_handler_;
     ProtocolState                           state_;
     bool                                    processing_message_;
-    bool                                    incomming_message_crc_status_;
+    bool                                    incoming_message_crc_status_;
     bool                                    answer_sent_;
     uint8_t                                 last_message_type_;
     std::chrono::steady_clock::time_point   cooldown_timeout_;
@@ -104,4 +104,4 @@ protected:
 
 
 } // HaierProtocol
-#endif // HAIRER_PROTOCOL_H
+#endif // HAIER_PROTOCOL_H

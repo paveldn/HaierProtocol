@@ -29,7 +29,7 @@ private:
 class VirtualStreamHolder {
 public:
     VirtualStreamHolder();
-    VirtualStream& get_stream_referance(StreamDirection);
+    VirtualStream& get_stream_reference(StreamDirection);
 private:
     CircularBuffer<uint8_t> buffers_[2];
     VirtualStream streams_[2];

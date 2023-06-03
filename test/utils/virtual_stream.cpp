@@ -22,7 +22,7 @@ VirtualStreamHolder::VirtualStreamHolder() :
 	streams_{ VirtualStream(buffers_[0], buffers_[1]), VirtualStream(buffers_[1], buffers_[0]) } {
 }
 
-VirtualStream& VirtualStreamHolder::get_stream_referance(StreamDirection direction) {
+VirtualStream& VirtualStreamHolder::get_stream_reference(StreamDirection direction) {
 	if (direction == StreamDirection::DIRECTION_A)
 		return this->streams_[0];
 	return this->streams_[1];

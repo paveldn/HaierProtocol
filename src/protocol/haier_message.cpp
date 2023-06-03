@@ -83,7 +83,7 @@ HaierMessage &HaierMessage::operator=(HaierMessage &&source) noexcept
 
 size_t HaierMessage::fill_buffer(uint8_t *const buffer, size_t limit) const
 {
-  if (this->get_bufer_size() > limit)
+  if (this->get_buffer_size() > limit)
     return 0;
   size_t pos = 0;
   if (this->subcommand_ != NO_SUBCOMMAND)

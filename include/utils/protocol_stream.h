@@ -1,11 +1,10 @@
 #ifndef PROTOCOL_STREAM_H
 #define PROTOCOL_STREAM_H
-#define abstract 
 
 namespace haier_protocol
 {
 
-abstract class ProtocolStream
+class ProtocolStream
 {
 public:
     // Return number of bytes available in read buffer

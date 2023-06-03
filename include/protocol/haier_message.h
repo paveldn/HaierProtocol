@@ -1,5 +1,5 @@
-#ifndef HAIRER_MESSAGE_H
-#define HAIRER_MESSAGE_H
+#ifndef HAIER_MESSAGE_H
+#define HAIER_MESSAGE_H
 
 #include <cstdint>
 
@@ -27,7 +27,7 @@ public:
     size_t get_data_size() const { return this->data_size_; };
     const uint8_t* get_data() const { return this->data_; };
     size_t fill_buffer(uint8_t* const buffer, size_t limit) const;
-    size_t get_bufer_size() const { return this->data_size_ + ((this->subcommand_ == NO_SUBCOMMAND) ? 0 : 2); }
+    size_t get_buffer_size() const { return this->data_size_ + ((this->subcommand_ == NO_SUBCOMMAND) ? 0 : 2); }
 protected:
     uint8_t     frame_type_;
     uint16_t    subcommand_;
@@ -36,4 +36,4 @@ protected:
 };
 
 } // HaierProtocol
-#endif // HAIRER_MESSAGE_H
+#endif // HAIER_MESSAGE_H

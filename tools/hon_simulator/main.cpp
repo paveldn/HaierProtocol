@@ -36,7 +36,7 @@ void preloop(haier_protocol::ProtocolHandler* handler) {
       ac_state.control.ten_degree = 0;
       ac_state.control.display_status = 1;
       ac_state.control.half_degree = 0;
-      ac_state.control.intelegence_status = 0;
+      ac_state.control.intelligence_status = 0;
       ac_state.control.pmv_status = 0;
       ac_state.control.use_fahrenheit = 0;
       ac_state.control.ac_power = 1;
@@ -73,7 +73,7 @@ void main(int argc, char** argv) {
     mhandlers[(uint8_t)FrameType::GET_DEVICE_ID] = get_device_id_handler;
     mhandlers[(uint8_t)FrameType::CONTROL] = status_request_handler;
     mhandlers[(uint8_t)FrameType::GET_ALARM_STATUS] = alarm_status_handler;
-    mhandlers[(uint8_t)FrameType::GET_MANAGEMENT_INFORMATION] = get_managment_information_handler;
+    mhandlers[(uint8_t)FrameType::GET_MANAGEMENT_INFORMATION] = get_management_information_handler;
     mhandlers[(uint8_t)FrameType::REPORT_NETWORK_STATUS] = report_network_status_handler;
     keyboard_handlers khandlers;
     khandlers['1'] = []() { _toggle_ac_power = true; };

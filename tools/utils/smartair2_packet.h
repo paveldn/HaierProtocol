@@ -11,7 +11,7 @@ enum class FanMode : uint8_t { FAN_HIGH = 0x00, FAN_MID = 0x01, FAN_LOW = 0x02, 
 struct HaierPacketControl {
   // Control bytes starts here
   // 10
-  uint8_t : 8;  // temperature high byte
+  uint8_t : 8;  // Temperature high byte
   // 11
   uint8_t room_temperature;  // current room temperature 1°C step
   // 12
@@ -61,7 +61,7 @@ struct HaierPacketControl {
   // 29
   uint8_t use_swing_bits : 1;    // Indicate if horizontal_swing and vertical_swing should be used
   uint8_t turbo_mode : 1;        // Turbo mode
-  uint8_t sleep_mode : 1;    // Sleep mode
+  uint8_t quiet_mode : 1;        // Sleep mode
   uint8_t horizontal_swing : 1;  // Horizontal swing (if swing_both == 0)
   uint8_t vertical_swing : 1;    // Vertical swing (if swing_both == 0) if vertical_swing and horizontal_swing both 0 =>
                                  // swing off
@@ -89,6 +89,8 @@ enum class FrameType : uint8_t {
   CONFIRM = 0x05,
   GET_DEVICE_VERSION = 0x61,
   GET_DEVICE_VERSION_RESPONSE = 0x62,
+  GET_DEVICE_ID = 0x70,
+  GET_DEVICE_ID_RESPONSE = 0x71,
   REPORT_NETWORK_STATUS = 0xF7,
   NO_COMMAND = 0xFF,
 };

@@ -24,7 +24,7 @@ void init_ac_state(HvacFullStatus& state) {
   state.control.ten_degree = 0;
   state.control.display_status = 1;
   state.control.half_degree = 0;
-  state.control.intelegence_status = 0;
+  state.control.intelligence_status = 0;
   state.control.pmv_status = 0;
   state.control.use_fahrenheit = 0;
   state.control.ac_power = 0;
@@ -112,7 +112,7 @@ haier_protocol::HandlerError get_device_version_handler(haier_protocol::Protocol
     }
   } else {
     protocol_handler->send_answer(INVALID_MSG);
-    return haier_protocol::HandlerError::UNSUPORTED_MESSAGE;
+    return haier_protocol::HandlerError::UNSUPPORTED_MESSAGE;
   }
 }
 
@@ -131,7 +131,7 @@ haier_protocol::HandlerError get_device_id_handler(haier_protocol::ProtocolHandl
     }
   } else {
     protocol_handler->send_answer(INVALID_MSG);
-    return haier_protocol::HandlerError::UNSUPORTED_MESSAGE;
+    return haier_protocol::HandlerError::UNSUPPORTED_MESSAGE;
   }
 }
 
@@ -143,21 +143,21 @@ haier_protocol::HandlerError status_request_handler(haier_protocol::ProtocolHand
     }
     uint16_t subcommand = (buffer[0] << 8) | buffer[1];
     switch (subcommand) {
-    case (uint16_t)SubcomandsControl::GET_USER_DATA:
+    case (uint16_t)SubcommandsControl::GET_USER_DATA:
       if (size != 2) {
         protocol_handler->send_answer(INVALID_MSG);
         return haier_protocol::HandlerError::WRONG_MESSAGE_STRUCTURE;
       }
       protocol_handler->send_answer(haier_protocol::HaierMessage((uint8_t)FrameType::STATUS, 0x6D01, (uint8_t*)&ac_status, sizeof(HvacFullStatus)));
       return haier_protocol::HandlerError::HANDLER_OK;
-    case (uint16_t)SubcomandsControl::GET_BIG_DATA:
+    case (uint16_t)SubcommandsControl::GET_BIG_DATA:
       if (size != 2) {
         protocol_handler->send_answer(INVALID_MSG);
         return haier_protocol::HandlerError::WRONG_MESSAGE_STRUCTURE;
       }
       protocol_handler->send_answer(haier_protocol::HaierMessage((uint8_t)FrameType::STATUS, 0x6D01, (uint8_t*)&ac_status, sizeof(HvacFullStatus)));
       return haier_protocol::HandlerError::HANDLER_OK;
-    case (uint16_t)SubcomandsControl::SET_GROUP_PARAMETERS:
+    case (uint16_t)SubcommandsControl::SET_GROUP_PARAMETERS:
       if (size - 2 != sizeof(HaierPacketControl)) {
         HAIER_LOGW("Wrong control packet size, expected %d, received %d", sizeof(HaierPacketControl), size - 2);
         protocol_handler->send_answer(INVALID_MSG);
@@ -172,7 +172,7 @@ haier_protocol::HandlerError status_request_handler(haier_protocol::ProtocolHand
       }
       protocol_handler->send_answer(haier_protocol::HaierMessage((uint8_t)FrameType::STATUS, 0x6D5F, (uint8_t*)&ac_status, sizeof(HaierPacketControl)));
       return haier_protocol::HandlerError::HANDLER_OK;
-    case ((uint16_t)SubcomandsControl::SET_SINGLE_PARAMETER) + 1:
+    case ((uint16_t)SubcommandsControl::SET_SINGLE_PARAMETER) + 1:
       if (size - 2 != 2) {
         HAIER_LOGW("Wrong control packet size, expected 2, received %d", size - 2);
         protocol_handler->send_answer(INVALID_MSG);
@@ -198,7 +198,7 @@ haier_protocol::HandlerError status_request_handler(haier_protocol::ProtocolHand
     }
   } else {
     protocol_handler->send_answer(INVALID_MSG);
-    return haier_protocol::HandlerError::UNSUPORTED_MESSAGE;
+    return haier_protocol::HandlerError::UNSUPPORTED_MESSAGE;
   }
 }
 
@@ -213,21 +213,21 @@ haier_protocol::HandlerError alarm_status_handler(haier_protocol::ProtocolHandle
     }
   } else {
     protocol_handler->send_answer(INVALID_MSG);
-    return haier_protocol::HandlerError::UNSUPORTED_MESSAGE;
+    return haier_protocol::HandlerError::UNSUPPORTED_MESSAGE;
   }
 }
 
-haier_protocol::HandlerError get_managment_information_handler(haier_protocol::ProtocolHandler* protocol_handler, uint8_t type, const uint8_t* buffer, size_t size) {
+haier_protocol::HandlerError get_management_information_handler(haier_protocol::ProtocolHandler* protocol_handler, uint8_t type, const uint8_t* buffer, size_t size) {
   if (type == (uint8_t)FrameType::GET_MANAGEMENT_INFORMATION) {
     if (size == 0) {
-      static const uint8_t managment_information_buf[] = { 
+      static const uint8_t management_information_buf[] = { 
         0x00, // Mode switch (normal working condition)
         0x00, // Reserved
         0x00, // Clear user information (no action)
         0x00, // Forced setting (not mandatory)
         0x00, 0x00 // Reserved
       };
-      protocol_handler->send_answer(haier_protocol::HaierMessage((uint8_t)FrameType::GET_MANAGEMENT_INFORMATION_RESPONSE, managment_information_buf, sizeof(managment_information_buf)));
+      protocol_handler->send_answer(haier_protocol::HaierMessage((uint8_t)FrameType::GET_MANAGEMENT_INFORMATION_RESPONSE, management_information_buf, sizeof(management_information_buf)));
       return haier_protocol::HandlerError::HANDLER_OK;
     } else {
       protocol_handler->send_answer(INVALID_MSG);
@@ -235,7 +235,7 @@ haier_protocol::HandlerError get_managment_information_handler(haier_protocol::P
     }
   } else {
     protocol_handler->send_answer(INVALID_MSG);
-    return haier_protocol::HandlerError::UNSUPORTED_MESSAGE;
+    return haier_protocol::HandlerError::UNSUPPORTED_MESSAGE;
   }
 }
 
@@ -274,6 +274,6 @@ haier_protocol::HandlerError report_network_status_handler(haier_protocol::Proto
     }
   } else {
     protocol_handler->send_answer(INVALID_MSG);
-    return haier_protocol::HandlerError::UNSUPORTED_MESSAGE;
+    return haier_protocol::HandlerError::UNSUPPORTED_MESSAGE;
   }
 }

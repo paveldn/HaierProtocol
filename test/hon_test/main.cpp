@@ -46,14 +46,14 @@ haier_protocol::HandlerError client_answers_handler(uint8_t message_type, uint8_
 int main(int argc, char** argv) {
 	VirtualStreamHolder stream_holder;
 	haier_protocol::set_log_handler(console_logger);
-	VirtualStream& server_stream = stream_holder.get_stream_referance(StreamDirection::DIRECTION_A);
-	VirtualStream& client_stream = stream_holder.get_stream_referance(StreamDirection::DIRECTION_B);
+	VirtualStream& server_stream = stream_holder.get_stream_reference(StreamDirection::DIRECTION_A);
+	VirtualStream& client_stream = stream_holder.get_stream_reference(StreamDirection::DIRECTION_B);
 	haier_protocol::ProtocolHandler hon_server(server_stream);
 	hon_server.set_message_handler((uint8_t)FrameType::GET_DEVICE_VERSION, std::bind(get_device_version_handler, &hon_server, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
 	hon_server.set_message_handler((uint8_t)FrameType::GET_DEVICE_ID, std::bind(get_device_id_handler, &hon_server, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
 	hon_server.set_message_handler((uint8_t)FrameType::CONTROL, std::bind(status_request_handler, &hon_server, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
 	hon_server.set_message_handler((uint8_t)FrameType::GET_ALARM_STATUS, std::bind(alarm_status_handler, &hon_server, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
-	hon_server.set_message_handler((uint8_t)FrameType::GET_MANAGEMENT_INFORMATION, std::bind(get_managment_information_handler, &hon_server, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
+	hon_server.set_message_handler((uint8_t)FrameType::GET_MANAGEMENT_INFORMATION, std::bind(get_management_information_handler, &hon_server, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
 	hon_server.set_message_handler((uint8_t)FrameType::REPORT_NETWORK_STATUS, std::bind(report_network_status_handler, &hon_server, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
 	haier_protocol::ProtocolHandler hon_client(client_stream);
 	ac_full_state = get_ac_state_ref();
@@ -78,7 +78,7 @@ int main(int argc, char** argv) {
 	}
 	std::this_thread::sleep_for(std::chrono::milliseconds(500));
 	{
-		const haier_protocol::HaierMessage status_request_message((uint8_t)FrameType::CONTROL, (uint16_t)SubcomandsControl::GET_USER_DATA);
+		const haier_protocol::HaierMessage status_request_message((uint8_t)FrameType::CONTROL, (uint16_t)SubcommandsControl::GET_USER_DATA);
 		hon_client.send_message(status_request_message, true);
 		hon_client.loop();
 		hon_server.loop();
@@ -121,7 +121,7 @@ int main(int argc, char** argv) {
 		ac_full_state.control.horizontal_swing_mode = (uint8_t)HorizontalSwingMode::MAX_LEFT;
 		ac_full_state.control.vertical_swing_mode = (uint8_t)VerticalSwingMode::HEALTH_DOWN;
 		ac_full_state.control.display_status = 0;
-		haier_protocol::HaierMessage control_message((uint8_t)FrameType::CONTROL, (uint16_t)SubcomandsControl::SET_GROUP_PARAMETERS, (uint8_t*)&ac_full_state.control, sizeof(HaierPacketControl));
+		haier_protocol::HaierMessage control_message((uint8_t)FrameType::CONTROL, (uint16_t)SubcommandsControl::SET_GROUP_PARAMETERS, (uint8_t*)&ac_full_state.control, sizeof(HaierPacketControl));
 		hon_client.send_message(control_message, true);
 		hon_client.loop();
 		hon_server.loop();
