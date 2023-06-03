@@ -7,17 +7,17 @@
 #include "utils/circular_buffer.h"
 
 #ifndef _WIN32
-#error This implementation of Haier protocol stream is for Windowws only
+#error This implementation of Haier protocol stream is for Windows only
 #endif
 
 #define SERIAL_BUFFER_SIZE 2048
 
-class SerailStream : public haier_protocol::ProtocolStream
+class SerialStream : public haier_protocol::ProtocolStream
 {
 public:
-    SerailStream() = delete;
-    SerailStream(const std::string& port_path);
-    ~SerailStream();
+    SerialStream() = delete;
+    SerialStream(const std::string& port_path);
+    ~SerialStream();
     bool is_valid() const { return handle_ != INVALID_HANDLE_VALUE; };
     size_t available() noexcept override;
     size_t read_array(uint8_t* data, size_t len) noexcept override;

@@ -23,7 +23,7 @@ uint8_t TransportLevelHandler::send_data(uint8_t frame_type, const uint8_t *data
     return 0;
 #if (HAIER_LOG_LEVEL > 3)
   static char _header[]{"Sending frame: type 00, data:"};
-  const char *_p = hexmap + (frame_type * 2);
+  const char *_p = hex_map + (frame_type * 2);
   _header[20] = _p[0];
   _header[21] = _p[1];
   HAIER_BUFD(_header, data, data_size);
@@ -204,7 +204,7 @@ void TransportLevelHandler::process_data()
 #if (HAIER_LOG_LEVEL > 3)
               static char _header[]{"Frame found: type 00, data:"};
               uint8_t _frameType = this->current_frame_.get_frame_type();
-              const char *_p = hexmap + (_frameType * 2);
+              const char *_p = hex_map + (_frameType * 2);
               _header[18] = _p[0];
               _header[19] = _p[1];
               HAIER_BUFD(_header, tmp_buf.get(), this->current_frame_.get_data_size());

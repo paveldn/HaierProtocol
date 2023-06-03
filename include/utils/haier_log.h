@@ -4,7 +4,7 @@
 #include <functional>
 #include <string>
 
-extern const char hexmap[];
+extern const char hex_map[];
 
 #ifndef HAIER_LOG_LEVEL
     #define HAIER_LOG_LEVEL 0

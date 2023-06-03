@@ -69,8 +69,8 @@ void console_logger(haier_protocol::HaierLogLevel level, const char* tag, const 
     if (debugviewpp_window == NULL)
       debugviewpp_window = FindWindowA(NULL, "[Capture Win32] - DebugView++");
     if (debugviewpp_window != NULL) {
-      static unsigned long processid = GetCurrentProcessId();
-      SendMessageA(debugviewpp_window, EM_REPLACESEL, processid, (LPARAM)msg_buffer);
+      static unsigned long process_id = GetCurrentProcessId();
+      SendMessageA(debugviewpp_window, EM_REPLACESEL, process_id, (LPARAM)msg_buffer);
     }
 #endif
 }

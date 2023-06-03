@@ -6,7 +6,7 @@
 #define HAIER_LOG_TAG "haier.protocol"
 #endif
 
-const char hexmap[] =
+const char hex_map[] =
     "00" "01" "02" "03" "04" "05" "06" "07" "08" "09" "0A" "0B" "0C" "0D" "0E" "0F"
     "10" "11" "12" "13" "14" "15" "16" "17" "18" "19" "1A" "1B" "1C" "1D" "1E" "1F"
     "20" "21" "22" "23" "24" "25" "26" "27" "28" "29" "2A" "2B" "2C" "2D" "2E" "2F"
@@ -31,7 +31,7 @@ std::string buf_to_hex(const uint8_t *message, size_t size)
   std::string raw(size * 3 - 1, ' ');
   for (size_t i = 0; i < size; ++i)
   {
-    const char *p = hexmap + (message[i] * 2);
+    const char *p = hex_map + (message[i] * 2);
     raw[3 * i] = p[0];
     raw[3 * i + 1] = p[1];
   }
@@ -52,7 +52,7 @@ size_t print_buf(const uint8_t *src_buf, size_t src_size, char *dst_buf, size_t 
     }
     for (size_t i = 0; i < bytes_to_print; i++)
     {
-      const char *p = hexmap + (src_buf[i] * 2);
+      const char *p = hex_map + (src_buf[i] * 2);
       dst_buf[3 * i] = p[0];
       dst_buf[3 * i + 1] = p[1];
       dst_buf[3 * i + 2] = ' ';
