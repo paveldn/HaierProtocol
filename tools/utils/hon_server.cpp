@@ -277,3 +277,22 @@ haier_protocol::HandlerError report_network_status_handler(haier_protocol::Proto
     return haier_protocol::HandlerError::UNSUPPORTED_MESSAGE;
   }
 }
+
+haier_protocol::HandlerError stop_alarm_handler(haier_protocol::ProtocolHandler* protocol_handler, uint8_t type, const uint8_t* buffer, size_t size) {
+  if (type == (uint8_t)FrameType::STOP_FAULT_ALARM) {
+    if (size == 0) {
+      HAIER_LOGI("Stop alarm message received. Stop all alarms");
+      reset_alarms();
+      protocol_handler->send_answer(CONFIRM_MSG);
+      return haier_protocol::HandlerError::HANDLER_OK;
+    }
+    else {
+      protocol_handler->send_answer(INVALID_MSG);
+      return haier_protocol::HandlerError::WRONG_MESSAGE_STRUCTURE;
+    }
+  }
+  else {
+    protocol_handler->send_answer(INVALID_MSG);
+    return haier_protocol::HandlerError::UNSUPPORTED_MESSAGE;
+  }
+}

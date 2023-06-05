@@ -75,6 +75,7 @@ void main(int argc, char** argv) {
     mhandlers[(uint8_t)FrameType::GET_ALARM_STATUS] = alarm_status_handler;
     mhandlers[(uint8_t)FrameType::GET_MANAGEMENT_INFORMATION] = get_management_information_handler;
     mhandlers[(uint8_t)FrameType::REPORT_NETWORK_STATUS] = report_network_status_handler;
+    mhandlers[(uint8_t)FrameType::STOP_FAULT_ALARM] = stop_alarm_handler;
     keyboard_handlers khandlers;
     khandlers['1'] = []() { _toggle_ac_power = true; };
     khandlers['2'] = []() { _enter_config_mode = true; };
