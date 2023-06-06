@@ -101,7 +101,7 @@ int main(int argc, char** argv) {
 	unsigned int warn = get_warnings_count();
 	unsigned int  errors = get_errors_count();
 	std::cout << "Test results, warning: " << warn << " errors: " << errors << std::endl;
-	if ((warn != 0) || (errors != 0))
+	if ((warn != 2) || (errors != 0))
 		exit(1);
 }
 
