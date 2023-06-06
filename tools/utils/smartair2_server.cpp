@@ -61,55 +61,11 @@ haier_protocol::HandlerError report_network_status_handler(haier_protocol::Proto
   }
 }
 
-haier_protocol::HandlerError get_device_version_handler(haier_protocol::ProtocolHandler* protocol_handler, uint8_t type, const uint8_t* buffer, size_t size) {
-  if (type == (uint8_t)FrameType::GET_DEVICE_VERSION) {
-    if ((size == 0) || (size == 2)) {
-      static const uint8_t device_version_info_buf[]{
-        'E', '+', '+', '2', '.', '1', '8', '\0', // Device protocol version
-        '1', '7', '0', '6', '2', '6', '0', '0', // Device software version
-        0xF1, // Encryption type (0xF1 - not supported)
-        0x00, 0x00, // Reserved
-        '1', '7', '0', '5', '2', '6', '0', '0', // Device hardware version
-        0x01, // Communication mode (controller/device communication mode supported)
-        'U', '-', 'A', 'C', '\0', '\0', '\0', '\0', // Device name
-        0x00, // Reserved
-        0x04, 0x5B // Device features (CRC is supported)
-      };
-      protocol_handler->send_answer(haier_protocol::HaierMessage((uint8_t)FrameType::GET_DEVICE_VERSION_RESPONSE, device_version_info_buf, sizeof(device_version_info_buf)), true);
-      return haier_protocol::HandlerError::HANDLER_OK;
-    }
-    else {
-      protocol_handler->send_answer(INVALID_MSG);
-      return haier_protocol::HandlerError::WRONG_MESSAGE_STRUCTURE;
-    }
-  }
-  else {
-    protocol_handler->send_answer(INVALID_MSG);
-    return haier_protocol::HandlerError::UNSUPPORTED_MESSAGE;
-  }
+haier_protocol::HandlerError unsupported_message_handler(haier_protocol::ProtocolHandler* protocol_handler, uint8_t type, const uint8_t* buffer, size_t size) {
+  HAIER_LOGI("Unsupported message 0x%02X received", type);
+  protocol_handler->send_answer(INVALID_MSG);
+  return haier_protocol::HandlerError::HANDLER_OK;
 }
-
-haier_protocol::HandlerError get_device_id_handler(haier_protocol::ProtocolHandler* protocol_handler, uint8_t type, const uint8_t* buffer, size_t size) {
-  if (type == (uint8_t)FrameType::GET_DEVICE_ID) {
-    if (size == 0) {
-      static const uint8_t device_id_buf[] = { 0x20, 0x20, 0x62, 0x84, 0x20, 0xD2, 0x85, 0x34, 0x02, 0x12, 0x71, 0xFB, 0xE0, 0xF4, 0x0D, 0x00,
-                                  0x00, 0x00, 0x82, 0x0C, 0xC8, 0x1B, 0xF1, 0x3C, 0x46, 0xAB, 0x92, 0x5B, 0xCE, 0x95, 0x77, 0xC0, // TypeID, 32 bytes binary value (automatically generated when a device is created)
-                                  0x04 // Device role (accessory device)
-      };
-      protocol_handler->send_answer(haier_protocol::HaierMessage((uint8_t)FrameType::GET_DEVICE_ID_RESPONSE, device_id_buf, sizeof(device_id_buf)), true);
-      return haier_protocol::HandlerError::HANDLER_OK;
-    }
-    else {
-      protocol_handler->send_answer(INVALID_MSG);
-      return haier_protocol::HandlerError::UNSUPPORTED_SUBCOMMAND;
-    }
-  }
-  else {
-    protocol_handler->send_answer(INVALID_MSG);
-    return haier_protocol::HandlerError::UNSUPPORTED_MESSAGE;
-  }
-}
-
 
 haier_protocol::HandlerError status_request_handler(haier_protocol::ProtocolHandler* protocol_handler, uint8_t type, const uint8_t* buffer, size_t size) {
   if (type == (uint8_t)FrameType::CONTROL) {

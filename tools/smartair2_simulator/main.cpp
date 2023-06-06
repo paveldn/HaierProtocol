@@ -34,8 +34,8 @@ void preloop(haier_protocol::ProtocolHandler* handler) {
 void main(int argc, char** argv) {
   if (argc == 2) {
     message_handlers mhandlers;
-    mhandlers[(uint8_t)FrameType::GET_DEVICE_VERSION] = get_device_version_handler;
-    mhandlers[(uint8_t)FrameType::GET_DEVICE_ID] = get_device_id_handler;
+    mhandlers[(uint8_t)FrameType::GET_DEVICE_VERSION] = unsupported_message_handler;
+    mhandlers[(uint8_t)FrameType::GET_DEVICE_ID] = unsupported_message_handler;
     mhandlers[(uint8_t) FrameType::CONTROL] = status_request_handler;
     mhandlers[(uint8_t) FrameType::REPORT_NETWORK_STATUS] = report_network_status_handler;
 

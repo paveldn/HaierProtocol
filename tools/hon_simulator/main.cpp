@@ -8,8 +8,12 @@
 using namespace esphome::haier::hon_protocol;
 HvacFullStatus& ac_state = get_ac_state_ref();
 
+enum class PiringMode {
+  NONE = 0,
+  HON_PAIRING = 1,
+};
 
-bool _enter_config_mode{ false };
+PiringMode _pairing_mode{ PiringMode::NONE };
 bool _toggle_ac_power{ false };
 bool _trigger_random_alarm{ false };
 
@@ -24,10 +28,10 @@ void preloop(haier_protocol::ProtocolHandler* handler) {
       HAIER_LOGW("Can't change AC power when in configuration mode!");
     }
   }
-  if (_enter_config_mode) {
-    _enter_config_mode = false;
+  if (_pairing_mode == PiringMode::HON_PAIRING) {
+    _pairing_mode = PiringMode::NONE;
     if (!is_in_configuration_mode()) {
-      HAIER_LOGI("Entering pairing mode");
+      HAIER_LOGI("Entering hOn pairing mode");
       ac_state.control.set_point = 0x0E;
       ac_state.control.vertical_swing_mode = (uint8_t) VerticalSwingMode::MAX_UP;
       ac_state.control.fan_mode = (uint8_t)FanMode::FAN_LOW;
@@ -78,7 +82,7 @@ void main(int argc, char** argv) {
     mhandlers[(uint8_t)FrameType::STOP_FAULT_ALARM] = stop_alarm_handler;
     keyboard_handlers khandlers;
     khandlers['1'] = []() { _toggle_ac_power = true; };
-    khandlers['2'] = []() { _enter_config_mode = true; };
+    khandlers['2'] = []() { _pairing_mode = PiringMode::HON_PAIRING; };
     khandlers['3'] = []() {
       ac_state.control.self_cleaning_status = false;
       ac_state.control.steri_clean = false; 
