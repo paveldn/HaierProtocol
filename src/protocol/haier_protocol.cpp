@@ -7,7 +7,7 @@ namespace haier_protocol
 {
 
 constexpr std::chrono::milliseconds MESSAGE_COOLDOWN_INTERVAL = std::chrono::milliseconds(400);
-constexpr std::chrono::milliseconds DEFAULT_ANSWER_TIMEOUT = std::chrono::milliseconds(150);
+constexpr std::chrono::milliseconds DEFAULT_ANSWER_TIMEOUT = std::chrono::milliseconds(200);
 
 ProtocolHandler::ProtocolHandler(ProtocolStream &stream) noexcept : transport_(stream),
   message_handlers_map_(),
