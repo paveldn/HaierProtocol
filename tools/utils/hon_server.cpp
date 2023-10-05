@@ -170,7 +170,7 @@ haier_protocol::HandlerError status_request_handler(haier_protocol::ProtocolHand
           cbyte = buffer[2 + i];
         }
       }
-      protocol_handler->send_answer(haier_protocol::HaierMessage((uint8_t)FrameType::STATUS, 0x6D5F, (uint8_t*)&ac_status, sizeof(HaierPacketControl)));
+      protocol_handler->send_answer(haier_protocol::HaierMessage((uint8_t)FrameType::STATUS, 0x6D5F, (uint8_t*)&ac_status, sizeof(HvacFullStatus)));
       return haier_protocol::HandlerError::HANDLER_OK;
     case ((uint16_t)SubcommandsControl::SET_SINGLE_PARAMETER) + 1:
       if (size - 2 != 2) {
@@ -181,20 +181,26 @@ haier_protocol::HandlerError status_request_handler(haier_protocol::ProtocolHand
       if (buffer[3] == 0) {
         HAIER_LOGI("AC power turned Off");
         ac_status.control.ac_power = 0;
-        protocol_handler->send_answer(haier_protocol::HaierMessage((uint8_t)FrameType::STATUS, 0x6D01, (uint8_t*)&ac_status, sizeof(HaierPacketControl)));
+        protocol_handler->send_answer(haier_protocol::HaierMessage((uint8_t)FrameType::STATUS, 0x6D01, (uint8_t*)&ac_status, sizeof(HvacFullStatus)));
         return haier_protocol::HandlerError::HANDLER_OK;
       }
       else if (buffer[3] == 1) {
         HAIER_LOGI("AC power turned On");
         ac_status.control.ac_power = 1;
-        protocol_handler->send_answer(haier_protocol::HaierMessage((uint8_t)FrameType::STATUS, 0x6D01, (uint8_t*)&ac_status, sizeof(HaierPacketControl)));
+        protocol_handler->send_answer(haier_protocol::HaierMessage((uint8_t)FrameType::STATUS, 0x6D01, (uint8_t*)&ac_status, sizeof(HvacFullStatus)));
         return haier_protocol::HandlerError::HANDLER_OK;
       }
       protocol_handler->send_answer(INVALID_MSG);
       return haier_protocol::HandlerError::UNSUPPORTED_SUBCOMMAND;
     default:
-      protocol_handler->send_answer(INVALID_MSG);
-      return haier_protocol::HandlerError::UNSUPPORTED_SUBCOMMAND;
+      if ((subcommand & 0xFF00) == (uint16_t)SubcommandsControl::SET_SINGLE_PARAMETER) {
+        protocol_handler->send_answer(haier_protocol::HaierMessage((uint8_t)FrameType::STATUS, 0x6D01, (uint8_t*)&ac_status, sizeof(HvacFullStatus)));
+        return haier_protocol::HandlerError::HANDLER_OK;
+      }
+      else {
+        protocol_handler->send_answer(INVALID_MSG);
+        return haier_protocol::HandlerError::UNSUPPORTED_SUBCOMMAND;
+      }
     }
   } else {
     protocol_handler->send_answer(INVALID_MSG);
