@@ -172,30 +172,16 @@ haier_protocol::HandlerError status_request_handler(haier_protocol::ProtocolHand
       }
       protocol_handler->send_answer(haier_protocol::HaierMessage((uint8_t)FrameType::STATUS, 0x6D5F, (uint8_t*)&ac_status, sizeof(HvacFullStatus)));
       return haier_protocol::HandlerError::HANDLER_OK;
-    case ((uint16_t)SubcommandsControl::SET_SINGLE_PARAMETER) + 1:
-      if (size - 2 != 2) {
-        HAIER_LOGW("Wrong control packet size, expected 2, received %d", size - 2);
-        protocol_handler->send_answer(INVALID_MSG);
-        return haier_protocol::HandlerError::WRONG_MESSAGE_STRUCTURE;
-      }
-      if (buffer[3] == 0) {
-        HAIER_LOGI("AC power turned Off");
-        ac_status.control.ac_power = 0;
-        protocol_handler->send_answer(haier_protocol::HaierMessage((uint8_t)FrameType::STATUS, 0x6D01, (uint8_t*)&ac_status, sizeof(HvacFullStatus)));
-        return haier_protocol::HandlerError::HANDLER_OK;
-      }
-      else if (buffer[3] == 1) {
-        HAIER_LOGI("AC power turned On");
-        ac_status.control.ac_power = 1;
-        protocol_handler->send_answer(haier_protocol::HaierMessage((uint8_t)FrameType::STATUS, 0x6D01, (uint8_t*)&ac_status, sizeof(HvacFullStatus)));
-        return haier_protocol::HandlerError::HANDLER_OK;
-      }
-      protocol_handler->send_answer(INVALID_MSG);
-      return haier_protocol::HandlerError::UNSUPPORTED_SUBCOMMAND;
     default:
       if ((subcommand & 0xFF00) == (uint16_t)SubcommandsControl::SET_SINGLE_PARAMETER) {
-        protocol_handler->send_answer(haier_protocol::HaierMessage((uint8_t)FrameType::STATUS, 0x6D01, (uint8_t*)&ac_status, sizeof(HvacFullStatus)));
-        return haier_protocol::HandlerError::HANDLER_OK;
+        if (size != 4) {
+          HAIER_LOGW("Wrong control packet size, expected 2, received %d", size - 2);
+          protocol_handler->send_answer(INVALID_MSG);
+          return haier_protocol::HandlerError::WRONG_MESSAGE_STRUCTURE;
+        }
+        uint8_t parameter = buffer[1];
+        uint16_t value = (buffer[2] << 8) + buffer[3];
+        return process_single_parameter(protocol_handler, parameter, value);
       }
       else {
         protocol_handler->send_answer(INVALID_MSG);
@@ -301,4 +287,95 @@ haier_protocol::HandlerError stop_alarm_handler(haier_protocol::ProtocolHandler*
     protocol_handler->send_answer(INVALID_MSG);
     return haier_protocol::HandlerError::UNSUPPORTED_MESSAGE;
   }
+}
+
+haier_protocol::HandlerError process_single_parameter(haier_protocol::ProtocolHandler* protocol_handler, uint8_t parameter, uint16_t value)
+{
+  #define SET_IF_DIFFERENT(VALUE, FIELD) \
+      do { \
+        if (ac_status.control.FIELD != VALUE) { \
+          HAIER_LOGI(#FIELD" <= %u", VALUE); \
+          ac_status.control.FIELD = VALUE; \
+        } \
+      } while (0)
+  haier_protocol::HandlerError result = haier_protocol::HandlerError::HANDLER_OK;
+  switch (parameter) {
+    case (uint8_t)DataParameters::AC_POWER:
+      if (value <= 1)
+        SET_IF_DIFFERENT(value, ac_power);
+      else
+        result = haier_protocol::HandlerError::UNSUPPORTED_MESSAGE;
+      break;
+    case (uint8_t)DataParameters::SET_POINT:
+      if ((parameter >= 0) && (parameter <= 14))
+        SET_IF_DIFFERENT(value, set_point);
+      else 
+        result = haier_protocol::HandlerError::UNSUPPORTED_MESSAGE;
+      break;
+    case (uint8_t)DataParameters::AC_MODE:
+      if ((parameter >= 0) && (parameter <= 6))
+        SET_IF_DIFFERENT(value, ac_mode);
+      else
+        result = haier_protocol::HandlerError::UNSUPPORTED_MESSAGE;
+      break;
+    case (uint8_t)DataParameters::FAN_MODE:
+      if (((parameter >= 1) && (parameter <= 3)) || (parameter == 5))
+        SET_IF_DIFFERENT(value, fan_mode);
+      else
+        result = haier_protocol::HandlerError::UNSUPPORTED_MESSAGE;
+      break;
+    case (uint8_t)DataParameters::USE_FAHRENHEIT:
+      if (value <= 1)
+        SET_IF_DIFFERENT(value, use_fahrenheit);
+      else
+        result = haier_protocol::HandlerError::UNSUPPORTED_MESSAGE;
+      break;
+    case (uint8_t)DataParameters::TEN_DEGREE:
+      if (value <= 1) 
+        SET_IF_DIFFERENT(value, ten_degree);
+      else
+        result = haier_protocol::HandlerError::UNSUPPORTED_MESSAGE;
+      break;
+    case (uint8_t)DataParameters::HEALTH_MODE:
+      if (value <= 1)
+        SET_IF_DIFFERENT(value, health_mode);
+      else
+        result = haier_protocol::HandlerError::UNSUPPORTED_MESSAGE;
+      break;
+    case (uint8_t)DataParameters::BEEPER_STATUS:
+      if (value <= 1) 
+        SET_IF_DIFFERENT(value, beeper_status);
+      else
+        result = haier_protocol::HandlerError::UNSUPPORTED_MESSAGE;
+      break;
+    case (uint8_t)DataParameters::LOCK_REMOTE:
+      if (value <= 1) 
+        SET_IF_DIFFERENT(value, lock_remote);
+      else
+        result = haier_protocol::HandlerError::UNSUPPORTED_MESSAGE;
+      break;
+    case (uint8_t)DataParameters::QUIET_MODE:
+      if (value <= 1) 
+        SET_IF_DIFFERENT(value, quiet_mode);
+      else
+        result = haier_protocol::HandlerError::UNSUPPORTED_MESSAGE;
+      break;
+    case (uint8_t)DataParameters::FAST_MODE:
+      if (value <= 1) 
+        SET_IF_DIFFERENT(value, fast_mode);
+      else
+        result = haier_protocol::HandlerError::UNSUPPORTED_MESSAGE;
+      break;
+    default:
+      result = haier_protocol::HandlerError::UNSUPPORTED_SUBCOMMAND;
+      break;
+  }
+  if (result == haier_protocol::HandlerError::HANDLER_OK) {
+    protocol_handler->send_answer(haier_protocol::HaierMessage((uint8_t)FrameType::STATUS, 0x6D01, (uint8_t*)&ac_status, sizeof(HvacFullStatus)));
+  }
+  else {
+    protocol_handler->send_answer(INVALID_MSG);
+  }
+  return result;
+  #undef SET_IF_DIFFERENT
 }
