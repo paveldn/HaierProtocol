@@ -85,7 +85,7 @@ uint8_t HaierFrame::get_header_byte_(uint8_t pos) const
     case HEADER_CRC_FLAG_POS:
       return  this->use_crc_ ? USE_CRC_MASK : 0;
     case HEADER_FRAME_TYPE_POS:
-      return this->frame_type_;
+      return (uint8_t) this->frame_type_;
     default:
       return 0;
     }

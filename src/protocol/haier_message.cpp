@@ -4,23 +4,23 @@
 namespace haier_protocol
 {
 
-HaierMessage::HaierMessage() noexcept : HaierMessage(UNKNOWN_MESSAGE_TYPE, NO_SUBCOMMAND, nullptr, 0)
+HaierMessage::HaierMessage() noexcept : HaierMessage(FrameType::UNKNOWN_FRAME_TYPE, NO_SUBCOMMAND, nullptr, 0)
 {
 }
 
-HaierMessage::HaierMessage(uint8_t frame_type) noexcept : HaierMessage(frame_type, NO_SUBCOMMAND, nullptr, 0)
+HaierMessage::HaierMessage(FrameType frame_type) noexcept : HaierMessage(frame_type, NO_SUBCOMMAND, nullptr, 0)
 {
 }
 
-HaierMessage::HaierMessage(uint8_t frame_type, uint16_t subcommand) noexcept : HaierMessage(frame_type, subcommand, nullptr, 0)
+HaierMessage::HaierMessage(FrameType frame_type, uint16_t subcommand) noexcept : HaierMessage(frame_type, subcommand, nullptr, 0)
 {
 }
 
-HaierMessage::HaierMessage(uint8_t frame_type, const uint8_t *data, size_t data_size) noexcept : HaierMessage(frame_type, NO_SUBCOMMAND, data, data_size)
+HaierMessage::HaierMessage(FrameType frame_type, const uint8_t *data, size_t data_size) noexcept : HaierMessage(frame_type, NO_SUBCOMMAND, data, data_size)
 {
 }
 
-HaierMessage::HaierMessage(uint8_t frame_type, uint16_t subcommand, const uint8_t *data, size_t data_size) : frame_type_(frame_type),
+HaierMessage::HaierMessage(FrameType frame_type, uint16_t subcommand, const uint8_t *data, size_t data_size) : frame_type_(frame_type),
   subcommand_(subcommand),
   data_size_(data_size),
   data_(nullptr)

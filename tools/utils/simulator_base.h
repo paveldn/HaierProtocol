@@ -4,7 +4,7 @@
 #include <unordered_map>
 #include "protocol/haier_protocol.h"
 
-using message_handlers = std::unordered_map<uint8_t, std::function<haier_protocol::HandlerError(haier_protocol::ProtocolHandler*, uint8_t, const uint8_t*, size_t)>>;
+using message_handlers = std::unordered_map<haier_protocol::FrameType, std::function<haier_protocol::HandlerError(haier_protocol::ProtocolHandler*, haier_protocol::FrameType, const uint8_t*, size_t)>>;
 using keyboard_handlers = std::unordered_map<char, std::function<void()>>;
 using protocol_preloop = std::function<void(haier_protocol::ProtocolHandler*)>;
 

@@ -21,7 +21,7 @@ ProtocolHandler::ProtocolHandler(ProtocolStream &stream) noexcept : transport_(s
   processing_message_(false),
   incoming_message_crc_status_(false),
   answer_sent_(false),
-  last_message_type_(UNKNOWN_MESSAGE_TYPE)
+  last_message_type_(FrameType::UNKNOWN_FRAME_TYPE)
 {
   this->cooldown_timeout_ = std::chrono::steady_clock::time_point();
 }
@@ -47,9 +47,9 @@ void ProtocolHandler::loop()
       {
         TimestampedFrame frame;
         this->transport_.pop(frame);
-        uint8_t msg_type = frame.frame.get_frame_type();
+        FrameType msg_type = (FrameType) frame.frame.get_frame_type();
         this->incoming_message_crc_status_ = frame.frame.get_use_crc();
-        std::map<uint8_t, MessageHandler>::const_iterator handler = this->message_handlers_map_.find(msg_type);
+        std::map<FrameType, MessageHandler>::const_iterator handler = this->message_handlers_map_.find(msg_type);
         this->processing_message_ = true;
         this->answer_sent_ = false;
         HandlerError hres;
@@ -90,7 +90,7 @@ void ProtocolHandler::loop()
     if ((std::chrono::steady_clock::now() > this->answer_timeout_))
     {
       HandlerError hres;
-      std::map<uint8_t, TimeoutHandler>::const_iterator handler = this->timeout_handlers_map_.find(this->last_message_type_);
+      std::map<FrameType, TimeoutHandler>::const_iterator handler = this->timeout_handlers_map_.find(this->last_message_type_);
       if (handler != this->timeout_handlers_map_.end())
         hres = handler->second(this->last_message_type_);
       else
@@ -106,9 +106,9 @@ void ProtocolHandler::loop()
     {
       TimestampedFrame frame;
       this->transport_.pop(frame);
-      uint8_t msg_type = frame.frame.get_frame_type();
+      FrameType msg_type = (FrameType) frame.frame.get_frame_type();
       HandlerError hres;
-      std::map<uint8_t, AnswerHandler>::const_iterator handler = this->answer_handlers_map_.find(last_message_type_);
+      std::map<FrameType, AnswerHandler>::const_iterator handler = this->answer_handlers_map_.find(last_message_type_);
       if (handler != this->answer_handlers_map_.end())
         hres = handler->second(this->last_message_type_, msg_type, frame.frame.get_data(), frame.frame.get_data_size());
       else
@@ -127,16 +127,17 @@ bool ProtocolHandler::write_message_(const HaierMessage &message, bool use_crc)
 {
   size_t buf_size = message.get_buffer_size();
   bool is_success = true;
+  uint8_t frame_type = (uint8_t) message.get_frame_type();
   if (buf_size == 0)
-    is_success = this->transport_.send_data(message.get_frame_type(), nullptr, 0, use_crc) > 0;
+    is_success = this->transport_.send_data(frame_type, nullptr, 0, use_crc) > 0;
   else
   {
     std::unique_ptr<uint8_t[]> buffer(new uint8_t[buf_size]);
-    is_success = (message.fill_buffer(buffer.get(), buf_size) > 0) && (this->transport_.send_data(message.get_frame_type(), buffer.get(), buf_size, use_crc) > 0);
+    is_success = (message.fill_buffer(buffer.get(), buf_size) > 0) && (this->transport_.send_data(frame_type, buffer.get(), buf_size, use_crc) > 0);
   }
   if (!is_success)
   {
-    HAIER_LOGE("Error sending message: %02X", message.get_frame_type());
+    HAIER_LOGE("Error sending message: %02X", frame_type);
   }
   this->cooldown_timeout_ = std::chrono::steady_clock::now() + MESSAGE_COOLDOWN_INTERVAL;
   return is_success;
@@ -174,14 +175,14 @@ void ProtocolHandler::send_answer(const HaierMessage& answer, bool use_crc)
     }
 }
 
-void ProtocolHandler::set_message_handler(uint8_t message_type, MessageHandler handler)
+void ProtocolHandler::set_message_handler(FrameType message_type, MessageHandler handler)
 {
   this->message_handlers_map_[message_type] = handler;
 }
 
-void ProtocolHandler::remove_message_handler(uint8_t message_type)
+void ProtocolHandler::remove_message_handler(FrameType message_type)
 {
-  std::map<uint8_t, MessageHandler>::const_iterator it = this->message_handlers_map_.find(message_type);
+  std::map<FrameType, MessageHandler>::const_iterator it = this->message_handlers_map_.find(message_type);
   if (it != this->message_handlers_map_.end())
     this->message_handlers_map_.erase(it);
 }
@@ -194,14 +195,14 @@ void ProtocolHandler::set_default_message_handler(MessageHandler handler)
   this->default_message_handler_ = handler;
 }
 
-void ProtocolHandler::set_answer_handler(uint8_t message_type, AnswerHandler handler)
+void ProtocolHandler::set_answer_handler(FrameType message_type, AnswerHandler handler)
 {
   this->answer_handlers_map_[message_type] = handler;
 }
 
-void ProtocolHandler::remove_answer_handler(uint8_t message_type)
+void ProtocolHandler::remove_answer_handler(FrameType message_type)
 {
-  std::map<uint8_t, AnswerHandler>::const_iterator it = this->answer_handlers_map_.find(message_type);
+  std::map<FrameType, AnswerHandler>::const_iterator it = this->answer_handlers_map_.find(message_type);
   if (it != this->answer_handlers_map_.end())
     this->answer_handlers_map_.erase(it);
 }
@@ -211,14 +212,14 @@ void ProtocolHandler::set_default_answer_handler(AnswerHandler handler)
   this->default_answer_handler_ = handler;
 }
 
-void ProtocolHandler::set_timeout_handler(uint8_t message_type, TimeoutHandler handler)
+void ProtocolHandler::set_timeout_handler(FrameType message_type, TimeoutHandler handler)
 {
   this->timeout_handlers_map_[message_type] = handler;
 }
 
-void ProtocolHandler::remove_timeout_handler(uint8_t message_type)
+void ProtocolHandler::remove_timeout_handler(FrameType message_type)
 {
-  std::map<uint8_t, TimeoutHandler>::const_iterator it = this->timeout_handlers_map_.find(message_type);
+  std::map<FrameType, TimeoutHandler>::const_iterator it = this->timeout_handlers_map_.find(message_type);
   if (it != this->timeout_handlers_map_.end())
     this->timeout_handlers_map_.erase(it);
 }
@@ -235,7 +236,7 @@ void ProtocolHandler::set_default_timeout_handler(TimeoutHandler handler)
 /// <param name="data">Incoming message data</param>
 /// <param name="data_size">Size of incoming data</param>
 /// <returns>Error code</returns>
-HandlerError default_message_handler(uint8_t message_type, const uint8_t *data, size_t data_size)
+HandlerError default_message_handler(FrameType message_type, const uint8_t *data, size_t data_size)
 {
   HAIER_LOGW("Unsupported message received: type %02X data: %s", message_type, data_size > 0 ? buf_to_hex(data, data_size).c_str() : "<empty>");
   return HandlerError::UNSUPPORTED_MESSAGE;
@@ -249,7 +250,7 @@ HandlerError default_message_handler(uint8_t message_type, const uint8_t *data, 
 /// <param name="data">Incoming message data</param>
 /// <param name="data_size">Size of incoming data</param>
 /// <returns>Error code</returns>
-HandlerError default_answer_handler(uint8_t requestType, uint8_t message_type, const uint8_t *data, size_t data_size)
+HandlerError default_answer_handler(FrameType requestType, FrameType message_type, const uint8_t *data, size_t data_size)
 {
   HAIER_LOGW("Unsupported answer to %02X received: type %02X data: %s", requestType, message_type, data_size > 0 ? buf_to_hex(data, data_size).c_str() : "<empty>");
   return HandlerError::UNSUPPORTED_MESSAGE;
@@ -260,7 +261,7 @@ HandlerError default_answer_handler(uint8_t requestType, uint8_t message_type, c
 /// </summary>
 /// <param name="requestType">Request that caused timeout</param>
 /// <returns>Error code</returns>
-HandlerError default_timeout_handler(uint8_t message_type)
+HandlerError default_timeout_handler(FrameType message_type)
 {
   HAIER_LOGW("Message %02X answer timeout", message_type);
   return HandlerError::HANDLER_OK;

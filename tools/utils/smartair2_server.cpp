@@ -6,8 +6,8 @@ using namespace esphome::haier::smartair2_protocol;
 
 const uint8_t double_zero_bytes[]{ 0x00, 0x00 };
 HaierPacketControl ac_status;
-const haier_protocol::HaierMessage INVALID_MSG((uint8_t)FrameType::INVALID, double_zero_bytes, 2);
-const haier_protocol::HaierMessage CONFIRM_MSG((uint8_t)FrameType::CONFIRM);
+const haier_protocol::HaierMessage INVALID_MSG(haier_protocol::FrameType::INVALID, double_zero_bytes, 2);
+const haier_protocol::HaierMessage CONFIRM_MSG(haier_protocol::FrameType::CONFIRM);
 
 
 void init_ac_state(HaierPacketControl& state) {
@@ -44,8 +44,8 @@ HaierPacketControl& get_ac_state_ref() {
   return ac_status;
 }
 
-haier_protocol::HandlerError report_network_status_handler(haier_protocol::ProtocolHandler* protocol_handler, uint8_t type, const uint8_t* buffer, size_t size) {
-  if (type == (uint8_t)FrameType::REPORT_NETWORK_STATUS) {
+haier_protocol::HandlerError report_network_status_handler(haier_protocol::ProtocolHandler* protocol_handler, haier_protocol::FrameType type, const uint8_t* buffer, size_t size) {
+  if (type == haier_protocol::FrameType::REPORT_NETWORK_STATUS) {
     if (size == 4) {
       protocol_handler->send_answer(CONFIRM_MSG);
       return haier_protocol::HandlerError::HANDLER_OK;
@@ -61,28 +61,28 @@ haier_protocol::HandlerError report_network_status_handler(haier_protocol::Proto
   }
 }
 
-haier_protocol::HandlerError unsupported_message_handler(haier_protocol::ProtocolHandler* protocol_handler, uint8_t type, const uint8_t* buffer, size_t size) {
+haier_protocol::HandlerError unsupported_message_handler(haier_protocol::ProtocolHandler* protocol_handler, haier_protocol::FrameType type, const uint8_t* buffer, size_t size) {
   HAIER_LOGI("Unsupported message 0x%02X received", type);
   protocol_handler->send_answer(INVALID_MSG);
   return haier_protocol::HandlerError::HANDLER_OK;
 }
 
-haier_protocol::HandlerError status_request_handler(haier_protocol::ProtocolHandler* protocol_handler, uint8_t type, const uint8_t* buffer, size_t size) {
-  if (type == (uint8_t)FrameType::CONTROL) {
+haier_protocol::HandlerError status_request_handler(haier_protocol::ProtocolHandler* protocol_handler, haier_protocol::FrameType type, const uint8_t* buffer, size_t size) {
+  if (type == haier_protocol::FrameType::CONTROL) {
     if ((size == 2) && (buffer[0] == 0x4D) && (buffer[1] == 0x01)) {
-      protocol_handler->send_answer(haier_protocol::HaierMessage((uint8_t)FrameType::STATUS, 0x6D01, (uint8_t*)&ac_status, sizeof(HaierPacketControl)));
+      protocol_handler->send_answer(haier_protocol::HaierMessage(haier_protocol::FrameType::STATUS, 0x6D01, (uint8_t*)&ac_status, sizeof(HaierPacketControl)));
       return haier_protocol::HandlerError::HANDLER_OK;
     }
     else if ((size == 2) && (buffer[0] == 0x4D) && (buffer[1] == 0x02)) {
       // Power ON
       ac_status.ac_power = 1;
-      protocol_handler->send_answer(haier_protocol::HaierMessage((uint8_t)FrameType::STATUS, 0x6D02, (uint8_t*)&ac_status, sizeof(HaierPacketControl)));
+      protocol_handler->send_answer(haier_protocol::HaierMessage(haier_protocol::FrameType::STATUS, 0x6D02, (uint8_t*)&ac_status, sizeof(HaierPacketControl)));
       return haier_protocol::HandlerError::HANDLER_OK;
     }
     else if ((size == 2) && (buffer[0] == 0x4D) && (buffer[1] == 0x03)) {
       // Power OFF
       ac_status.ac_power = 0;
-      protocol_handler->send_answer(haier_protocol::HaierMessage((uint8_t)FrameType::STATUS, 0x6D03, (uint8_t*)&ac_status, sizeof(HaierPacketControl)));
+      protocol_handler->send_answer(haier_protocol::HaierMessage(haier_protocol::FrameType::STATUS, 0x6D03, (uint8_t*)&ac_status, sizeof(HaierPacketControl)));
       return haier_protocol::HandlerError::HANDLER_OK;
     }
     else if ((size > 2) && (buffer[0] == 0x4D) && (buffer[1] == 0x5F)) {
@@ -102,7 +102,7 @@ haier_protocol::HandlerError status_request_handler(haier_protocol::ProtocolHand
           cbyte = buffer[2 + i];
         }
       }
-      protocol_handler->send_answer(haier_protocol::HaierMessage((uint8_t)FrameType::STATUS, 0x6D5F, (uint8_t*)&ac_status, sizeof(HaierPacketControl)));
+      protocol_handler->send_answer(haier_protocol::HaierMessage(haier_protocol::FrameType::STATUS, 0x6D5F, (uint8_t*)&ac_status, sizeof(HaierPacketControl)));
       return haier_protocol::HandlerError::HANDLER_OK;
     }
     else {

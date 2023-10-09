@@ -9,8 +9,8 @@ using namespace esphome::haier::smartair2_protocol;
 
 HaierPacketControl& ac_state = get_ac_state_ref();
 
-const haier_protocol::HaierMessage INVALID_MSG((uint8_t)FrameType::INVALID, 0x0000);
-const haier_protocol::HaierMessage CONFIRM_MSG((uint8_t)FrameType::CONFIRM);
+const haier_protocol::HaierMessage INVALID_MSG(haier_protocol::FrameType::INVALID, 0x0000);
+const haier_protocol::HaierMessage CONFIRM_MSG(haier_protocol::FrameType::CONFIRM);
 bool toggle_ac_power{ false };
 bool start_pairing{ false };
 
@@ -34,10 +34,10 @@ void preloop(haier_protocol::ProtocolHandler* handler) {
 void main(int argc, char** argv) {
   if (argc == 2) {
     message_handlers mhandlers;
-    mhandlers[(uint8_t)FrameType::GET_DEVICE_VERSION] = unsupported_message_handler;
-    mhandlers[(uint8_t)FrameType::GET_DEVICE_ID] = unsupported_message_handler;
-    mhandlers[(uint8_t) FrameType::CONTROL] = status_request_handler;
-    mhandlers[(uint8_t) FrameType::REPORT_NETWORK_STATUS] = report_network_status_handler;
+    mhandlers[haier_protocol::FrameType::GET_DEVICE_VERSION] = unsupported_message_handler;
+    mhandlers[haier_protocol::FrameType::GET_DEVICE_ID] = unsupported_message_handler;
+    mhandlers[haier_protocol::FrameType::CONTROL] = status_request_handler;
+    mhandlers[haier_protocol::FrameType::REPORT_NETWORK_STATUS] = report_network_status_handler;
 
     keyboard_handlers khandlers;
     khandlers['1'] = []() { toggle_ac_power = true; };

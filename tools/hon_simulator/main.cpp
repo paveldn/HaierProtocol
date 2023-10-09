@@ -73,13 +73,13 @@ void main(int argc, char** argv) {
   if (argc == 2) {
     std::srand(std::time(nullptr));
     message_handlers mhandlers;
-    mhandlers[(uint8_t)FrameType::GET_DEVICE_VERSION] = get_device_version_handler;
-    mhandlers[(uint8_t)FrameType::GET_DEVICE_ID] = get_device_id_handler;
-    mhandlers[(uint8_t)FrameType::CONTROL] = status_request_handler;
-    mhandlers[(uint8_t)FrameType::GET_ALARM_STATUS] = alarm_status_handler;
-    mhandlers[(uint8_t)FrameType::GET_MANAGEMENT_INFORMATION] = get_management_information_handler;
-    mhandlers[(uint8_t)FrameType::REPORT_NETWORK_STATUS] = report_network_status_handler;
-    mhandlers[(uint8_t)FrameType::STOP_FAULT_ALARM] = stop_alarm_handler;
+    mhandlers[haier_protocol::FrameType::GET_DEVICE_VERSION] = get_device_version_handler;
+    mhandlers[haier_protocol::FrameType::GET_DEVICE_ID] = get_device_id_handler;
+    mhandlers[haier_protocol::FrameType::CONTROL] = status_request_handler;
+    mhandlers[haier_protocol::FrameType::GET_ALARM_STATUS] = alarm_status_handler;
+    mhandlers[haier_protocol::FrameType::GET_MANAGEMENT_INFORMATION] = get_management_information_handler;
+    mhandlers[haier_protocol::FrameType::REPORT_NETWORK_STATUS] = report_network_status_handler;
+    mhandlers[haier_protocol::FrameType::STOP_FAULT_ALARM] = stop_alarm_handler;
     keyboard_handlers khandlers;
     khandlers['1'] = []() { _toggle_ac_power = true; };
     khandlers['2'] = []() { _pairing_mode = PiringMode::HON_PAIRING; };
