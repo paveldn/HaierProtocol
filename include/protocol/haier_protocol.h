@@ -56,9 +56,11 @@ public:
     ProtocolHandler& operator=(const ProtocolHandler&) = delete;
     explicit ProtocolHandler(ProtocolStream&) noexcept;
     size_t get_outgoing_queue_size() const noexcept {return this->outgoing_messages_.size(); };
-    void send_message(const HaierMessage& message, bool use_crc);
-    void send_message(const HaierMessage& message, bool use_crc, long long answer_timeout_miliseconds);
-    void send_message(const HaierMessage& message, bool use_crc, std::chrono::milliseconds answer_timeout);
+    void set_answer_timeout(long long answer_timeout_miliseconds);
+    void set_answer_timeout(std::chrono::milliseconds answer_timeout);
+    void set_cooldown_interval(long long answer_timeout_miliseconds);
+    void set_cooldown_interval(std::chrono::milliseconds answer_timeout);
+    void send_message(const HaierMessage& message, bool use_crc, uint8_t num_retries = 0, std::chrono::milliseconds interval = std::chrono::milliseconds::zero());
     void send_answer(const HaierMessage& answer);
     void send_answer(const HaierMessage& answer, bool use_crc);
     void set_message_handler(FrameType message_type, MessageHandler handler);
@@ -82,7 +84,8 @@ protected:
     {
         const HaierMessage message;
         bool use_crc;
-        const std::chrono::milliseconds answer_timeout;
+        int number_of_retries;
+        std::chrono::milliseconds retry_interval;
     };
     using OutgoingQueue = std::queue<OutgoingQueueItem>;
     TransportLevelHandler                   transport_;
@@ -98,8 +101,12 @@ protected:
     bool                                    incoming_message_crc_status_;
     bool                                    answer_sent_;
     FrameType                               last_message_type_;
-    std::chrono::steady_clock::time_point   cooldown_timeout_;
-    std::chrono::steady_clock::time_point   answer_timeout_;
+    std::chrono::milliseconds               answer_timeout_interval_;
+    std::chrono::milliseconds               cooldown_interval_;
+    std::chrono::steady_clock::time_point   cooldown_time_point_;
+    std::chrono::steady_clock::time_point   answer_time_point_;
+    std::chrono::steady_clock::time_point   retry_time_point_;
+
 };
 
 

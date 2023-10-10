@@ -55,11 +55,30 @@ int main(int argc, char** argv) {
 	{
 		uint8_t module_capabilities[2] = { 0b00000000, 0b00000111 };
 		const haier_protocol::HaierMessage device_version_request_message(haier_protocol::FrameType::GET_DEVICE_VERSION, module_capabilities, sizeof(module_capabilities));
-		smartair2_client.send_message(device_version_request_message, false, 100);
+		smartair2_client.send_message(device_version_request_message, false, 3);
 		smartair2_client.loop();
 		smartair2_server.loop();
 		smartair2_client.loop();
 		smartair2_server.loop();
+		for (int i = 0; i <= 2; i++) {
+			std::this_thread::sleep_for(std::chrono::milliseconds(500));
+			smartair2_client.loop();
+			smartair2_server.loop();
+		}
+	}
+	{
+		// Unsupported message
+		const haier_protocol::HaierMessage unsupported_request_message(haier_protocol::FrameType::DOWNLINK_TRANSPARENT_TRANSMISSION);
+		smartair2_client.send_message(unsupported_request_message, false, 3);
+		smartair2_client.loop();
+		smartair2_server.loop();
+		smartair2_client.loop();
+		smartair2_server.loop();
+		for (int i = 0; i <= 6; i++) {
+			std::this_thread::sleep_for(std::chrono::milliseconds(500));
+			smartair2_client.loop();
+			smartair2_server.loop();
+		}
 	}
 	std::this_thread::sleep_for(std::chrono::milliseconds(500));
 	{
@@ -101,7 +120,7 @@ int main(int argc, char** argv) {
 	unsigned int warn = get_warnings_count();
 	unsigned int  errors = get_errors_count();
 	std::cout << "Test results, warning: " << warn << " errors: " << errors << std::endl;
-	if ((warn != 2) || (errors != 0))
+	if ((warn != 11) || (errors != 0))
 		exit(1);
 }
 

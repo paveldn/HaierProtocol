@@ -6,8 +6,9 @@
 namespace haier_protocol
 {
 
-constexpr std::chrono::milliseconds MESSAGE_COOLDOWN_INTERVAL = std::chrono::milliseconds(400);
+constexpr uint8_t MAX_PACKET_RETRIES = 9;
 constexpr std::chrono::milliseconds DEFAULT_ANSWER_TIMEOUT = std::chrono::milliseconds(200);
+constexpr std::chrono::milliseconds DEFAULT_COOLDOWN_INTERVAL = std::chrono::milliseconds(400);
 
 ProtocolHandler::ProtocolHandler(ProtocolStream &stream) noexcept : transport_(stream),
   message_handlers_map_(),
@@ -21,15 +22,18 @@ ProtocolHandler::ProtocolHandler(ProtocolStream &stream) noexcept : transport_(s
   processing_message_(false),
   incoming_message_crc_status_(false),
   answer_sent_(false),
-  last_message_type_(FrameType::UNKNOWN_FRAME_TYPE)
+  last_message_type_(FrameType::UNKNOWN_FRAME_TYPE),
+  answer_timeout_interval_(DEFAULT_ANSWER_TIMEOUT),
+  cooldown_interval_(DEFAULT_COOLDOWN_INTERVAL)
 {
-  this->cooldown_timeout_ = std::chrono::steady_clock::time_point();
+  this->cooldown_time_point_ = std::chrono::steady_clock::time_point();
 }
 
 void ProtocolHandler::loop()
 {
   this->transport_.read_data();
   this->transport_.process_data();
+  std::chrono::steady_clock::time_point now = std::chrono::steady_clock::now();
   switch (this->state_)
   {
   case ProtocolState::IDLE:
@@ -68,36 +72,46 @@ void ProtocolHandler::loop()
         }
       }
       {
-        std::chrono::steady_clock::time_point now = std::chrono::steady_clock::now();
-        bool messagesAvailable = !this->outgoing_messages_.empty();
-        if ((messagesAvailable) && (now >= this->cooldown_timeout_))
+        if ((!this->outgoing_messages_.empty()) && (now >= this->cooldown_time_point_) && (now >= this->retry_time_point_))
         {
           // Ready to send next message
           OutgoingQueueItem &msg = this->outgoing_messages_.front();
-          if (this->write_message_(msg.message, msg.use_crc))
-          {
-            this->last_message_type_ = msg.message.get_frame_type();
-            this->state_ = ProtocolState::WAITING_FOR_ANSWER;
-            this->answer_timeout_ = now + msg.answer_timeout;
+          if (msg.number_of_retries > 0) {
+            if (this->write_message_(msg.message, msg.use_crc))
+            {
+              this->last_message_type_ = msg.message.get_frame_type();
+              this->state_ = ProtocolState::WAITING_FOR_ANSWER;
+              this->answer_time_point_ = now + this->answer_timeout_interval_;
+              this->retry_time_point_ = now + msg.retry_interval;
+            }
+            msg.number_of_retries--;
+          } else {
+            this->outgoing_messages_.pop();
+            this->retry_time_point_ = now;
           }
-          this->outgoing_messages_.pop();
         }
       }
     }
     break;
   case ProtocolState::WAITING_FOR_ANSWER:
     // Check for timeout, move to idle after timeout
-    if ((std::chrono::steady_clock::now() > this->answer_timeout_))
+    if (now > this->answer_time_point_)
     {
-      HandlerError hres;
-      std::map<FrameType, TimeoutHandler>::const_iterator handler = this->timeout_handlers_map_.find(this->last_message_type_);
-      if (handler != this->timeout_handlers_map_.end())
-        hres = handler->second(this->last_message_type_);
-      else
-        hres = this->default_timeout_handler_(this->last_message_type_);
-      if (hres != HandlerError::HANDLER_OK)
-      {
-        HAIER_LOGW("Timeout handler error, msg=%02X, err=%d", this->last_message_type_, hres);
+      // Answer timeout
+      OutgoingQueueItem& msg = this->outgoing_messages_.front();
+      if (msg.number_of_retries == 0) {
+        // No more retries, remove message
+        this->outgoing_messages_.pop();
+        this->retry_time_point_ = now;
+        HandlerError hres;
+        std::map<FrameType, TimeoutHandler>::const_iterator handler = this->timeout_handlers_map_.find(this->last_message_type_);
+        if (handler != this->timeout_handlers_map_.end())
+          hres = handler->second(this->last_message_type_);
+        else
+          hres = this->default_timeout_handler_(this->last_message_type_);
+        if (hres != HandlerError::HANDLER_OK) {
+          HAIER_LOGW("Timeout handler error, msg=%02X, err=%d", this->last_message_type_, hres);
+        }
       }
       state_ = ProtocolState::IDLE;
       break;
@@ -117,6 +131,9 @@ void ProtocolHandler::loop()
       {
         HAIER_LOGW("Answer handler error, msg=%02X, answ=%02X, err=%d", this->last_message_type_, msg_type, hres);
       }
+      // Answer received, remove message
+      this->outgoing_messages_.pop();
+      this->retry_time_point_ = now;
       state_ = ProtocolState::IDLE;
     }
     break;
@@ -139,23 +156,13 @@ bool ProtocolHandler::write_message_(const HaierMessage &message, bool use_crc)
   {
     HAIER_LOGE("Error sending message: %02X", frame_type);
   }
-  this->cooldown_timeout_ = std::chrono::steady_clock::now() + MESSAGE_COOLDOWN_INTERVAL;
+  this->cooldown_time_point_ = std::chrono::steady_clock::now() + this->cooldown_interval_;
   return is_success;
 }
 
-void ProtocolHandler::send_message(const HaierMessage &message, bool use_crc)
+void ProtocolHandler::send_message(const HaierMessage& message, bool use_crc, uint8_t num_repeats, std::chrono::milliseconds interval)
 {
-  send_message(message, use_crc, DEFAULT_ANSWER_TIMEOUT);
-}
-
-void ProtocolHandler::send_message(const HaierMessage& message, bool use_crc, long long answer_timeout_miliseconds)
-{
-  send_message(message, use_crc, std::chrono::milliseconds(answer_timeout_miliseconds));
-}
-
-void ProtocolHandler::send_message(const HaierMessage& message, bool use_crc, std::chrono::milliseconds answer_timeout)
-{
-  this->outgoing_messages_.push({ message, use_crc, answer_timeout });
+  this->outgoing_messages_.push({ message, use_crc, std::min(num_repeats, MAX_PACKET_RETRIES) + 1, interval });
 }
 
 void ProtocolHandler::send_answer(const HaierMessage &answer)
