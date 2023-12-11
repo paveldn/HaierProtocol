@@ -16,6 +16,7 @@ enum class PiringMode {
 PiringMode _pairing_mode{ PiringMode::NONE };
 bool _toggle_ac_power{ false };
 bool _trigger_random_alarm{ false };
+bool _reset_alarm{ false };
 
 void preloop(haier_protocol::ProtocolHandler* handler) {
   if (_toggle_ac_power) {
@@ -64,9 +65,16 @@ void preloop(haier_protocol::ProtocolHandler* handler) {
   }
   if (_trigger_random_alarm) {
     _trigger_random_alarm = false;
-    HAIER_LOGI("Random alarm triggered");
-    trigger_random_alarm();
+    size_t r = std::rand() % (ALARM_BUF_SIZE * 8);
+    HAIER_LOGI("Random alarm triggered. Alarm code %d", r);
+    start_alarm(r);
   }
+  if (_reset_alarm) {
+    _reset_alarm = false;
+    HAIER_LOGI("Reseting all alarms");
+    reset_alarms();
+  }
+  process_alarms(handler);
 }
 
 void main(int argc, char** argv) {
@@ -80,6 +88,8 @@ void main(int argc, char** argv) {
     mhandlers[haier_protocol::FrameType::GET_MANAGEMENT_INFORMATION] = get_management_information_handler;
     mhandlers[haier_protocol::FrameType::REPORT_NETWORK_STATUS] = report_network_status_handler;
     mhandlers[haier_protocol::FrameType::STOP_FAULT_ALARM] = stop_alarm_handler;
+    answer_handlers ahandlers;
+    ahandlers[haier_protocol::FrameType::ALARM_STATUS] = alarm_status_report_answer_handler;
     keyboard_handlers khandlers;
     khandlers['1'] = []() { _toggle_ac_power = true; };
     khandlers['2'] = []() { _pairing_mode = PiringMode::HON_PAIRING; };
@@ -88,8 +98,10 @@ void main(int argc, char** argv) {
       ac_state.control.steri_clean = false; 
     };
     khandlers['a'] = []() { _trigger_random_alarm = true; };
-    simulator_main("hOn HVAC simulator", argv[1], mhandlers, khandlers, preloop);
+    khandlers['s'] = []() { _reset_alarm = true; };
+    simulator_main("hOn HVAC simulator", argv[1], mhandlers, ahandlers, khandlers, preloop);
   }
+
   else {
     std::cout << "Please use: hon_simulator <port>" << std::endl;
   }

@@ -9,10 +9,24 @@ HvacFullStatus ac_status;
 bool config_mode{ false };
 const haier_protocol::HaierMessage INVALID_MSG(haier_protocol::FrameType::INVALID, double_zero_bytes, 2);
 const haier_protocol::HaierMessage CONFIRM_MSG(haier_protocol::FrameType::CONFIRM);
-uint8_t alarm_status_buf[] = {
-  0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 // Alarm mask (no alarms)
-};
+uint8_t alarm_status_buf[ALARM_BUF_SIZE] = { 0x00 }; // Alarm mask (no alarms)
+
 uint8_t communication_status{ 0xFF };
+std::chrono::steady_clock::time_point last_alarm_message;
+bool alarm_paused;
+bool alarm_stopped;
+
+constexpr size_t SHORT_ALARM_REPORT_INTERVAL_MS = 300;
+constexpr size_t LONG_ALARM_REPORT_INTERVAL_MS = 5000;
+
+bool alarm_active() {
+  if (alarm_stopped)
+    return false;
+  for (int i = 0; i < ALARM_BUF_SIZE; i++)
+    if (alarm_status_buf[i] != 0)
+      return true;
+  return false;
+}
 
 void init_ac_state(HvacFullStatus& state) {
   memset(&state, 0, sizeof(HvacFullStatus));
@@ -64,10 +78,26 @@ void init_ac_state(HvacFullStatus& state) {
   state.sensors.ch2o_value = 0;
   state.sensors.voc_value = 0;
   state.sensors.co2_value = 0;
+  last_alarm_message = std::chrono::steady_clock::now();
+  alarm_paused = false;
+  alarm_stopped = false;
 }
 
 bool is_in_configuration_mode() {
   return config_mode;
+}
+
+void process_alarms(haier_protocol::ProtocolHandler* protocol_handler)
+{
+  if (alarm_active() && !protocol_handler->is_waiting_for_answer() && (protocol_handler->get_outgoing_queue_size() == 0)) {
+    std::chrono::steady_clock::time_point now = std::chrono::steady_clock::now();
+    if (( alarm_paused && (std::chrono::duration_cast<std::chrono::milliseconds>(now - last_alarm_message).count() > LONG_ALARM_REPORT_INTERVAL_MS)) ||
+        (!alarm_paused && (std::chrono::duration_cast<std::chrono::milliseconds>(now - last_alarm_message).count() > SHORT_ALARM_REPORT_INTERVAL_MS))) {
+      alarm_paused = false;
+      protocol_handler->send_message(haier_protocol::HaierMessage(haier_protocol::FrameType::ALARM_STATUS, 0x0F5A, alarm_status_buf, sizeof(alarm_status_buf)), true);
+      last_alarm_message = now;
+    }
+  }
 }
 
 HvacFullStatus& get_ac_state_ref() {
@@ -79,15 +109,19 @@ HvacFullStatus& get_ac_state_ref() {
   return ac_status;
 }
 
-void trigger_random_alarm() {
-  size_t range = sizeof(alarm_status_buf) * 8;
-  size_t r = std::rand() % range;
-  size_t index = r / 8;
-  alarm_status_buf[index] |= 1 << (r % 8);
+bool start_alarm(uint8_t alarm_id) {
+  if (alarm_id >= ALARM_BUF_SIZE * 8)
+    return false;
+  alarm_paused = false;
+  alarm_stopped = false;
+  alarm_status_buf[(uint8_t)(alarm_id / 8)] |= (1 << (alarm_id % 8));
+  return true;
 }
 
 void reset_alarms() {
-  memset(alarm_status_buf, 0, sizeof(alarm_status_buf));
+  memset(alarm_status_buf, 0, sizeof(ALARM_BUF_SIZE));
+  alarm_stopped = false;
+  alarm_paused = false;
 }
 
 haier_protocol::HandlerError get_device_version_handler(haier_protocol::ProtocolHandler* protocol_handler, haier_protocol::FrameType type, const uint8_t* buffer, size_t size) {
@@ -166,7 +200,7 @@ haier_protocol::HandlerError status_request_handler(haier_protocol::ProtocolHand
       for (unsigned int i = 0; i < sizeof(HaierPacketControl); i++) {
         uint8_t& cbyte = ((uint8_t*)&ac_status)[i];
         if (cbyte != buffer[2 + i]) {
-          HAIER_LOGI("Byte #%d changed 0x%02X => 0x%02X", i, cbyte, buffer[2 + i]);
+          HAIER_LOGI("Byte #%d changed 0x%02X => 0x%02X", i + 10, cbyte, buffer[2 + i]);
           cbyte = buffer[2 + i];
         }
       }
@@ -270,11 +304,28 @@ haier_protocol::HandlerError report_network_status_handler(haier_protocol::Proto
   }
 }
 
+haier_protocol::HandlerError alarm_status_report_answer_handler(haier_protocol::ProtocolHandler* protocol_handler, haier_protocol::FrameType request_type, haier_protocol::FrameType message_type, const uint8_t* data, size_t data_size) {
+  if (request_type == haier_protocol::FrameType::ALARM_STATUS) {
+    if (message_type == haier_protocol::FrameType::CONFIRM) {
+      if (data_size == 0) {
+        alarm_paused = true;
+        return haier_protocol::HandlerError::HANDLER_OK;
+      }
+      else
+        return haier_protocol::HandlerError::WRONG_MESSAGE_STRUCTURE;
+    }
+    else
+      return haier_protocol::HandlerError::INVALID_ANSWER;
+  }
+  else
+    return haier_protocol::HandlerError::UNEXPECTED_MESSAGE;
+}
+
 haier_protocol::HandlerError stop_alarm_handler(haier_protocol::ProtocolHandler* protocol_handler, haier_protocol::FrameType type, const uint8_t* buffer, size_t size) {
   if (type == haier_protocol::FrameType::STOP_FAULT_ALARM) {
     if (size == 0) {
-      HAIER_LOGI("Stop alarm message received. Stop all alarms");
-      reset_alarms();
+      HAIER_LOGI("Stop alarm message received.");
+      alarm_stopped = true;
       protocol_handler->send_answer(CONFIRM_MSG);
       return haier_protocol::HandlerError::HANDLER_OK;
     }

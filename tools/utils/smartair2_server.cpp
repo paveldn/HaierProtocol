@@ -98,7 +98,7 @@ haier_protocol::HandlerError status_request_handler(haier_protocol::ProtocolHand
           continue;
         uint8_t& cbyte = ((uint8_t*)&ac_status)[i];
         if (cbyte != buffer[2 + i]) {
-          HAIER_LOGI("Byte #%d changed 0x%02X => 0x%02X", i, cbyte, buffer[2 + i]);
+          HAIER_LOGI("Byte #%d changed 0x%02X => 0x%02X", i + 10, cbyte, buffer[2 + i]);
           cbyte = buffer[2 + i];
         }
       }

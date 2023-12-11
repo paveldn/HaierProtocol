@@ -9,9 +9,13 @@ struct HvacFullStatus {
   esphome::haier::hon_protocol::HaierPacketSensors sensors;
 };
 
+constexpr size_t ALARM_BUF_SIZE = 8;
+
+void process_alarms(haier_protocol::ProtocolHandler* protocol_handler);
+
 HvacFullStatus& get_ac_state_ref();
 
-void trigger_random_alarm();
+bool start_alarm(uint8_t alarm_id);
 
 void reset_alarms();
 
@@ -32,3 +36,5 @@ haier_protocol::HandlerError report_network_status_handler(haier_protocol::Proto
 haier_protocol::HandlerError stop_alarm_handler(haier_protocol::ProtocolHandler* protocol_handler, haier_protocol::FrameType type, const uint8_t* buffer, size_t size);
 
 haier_protocol::HandlerError process_single_parameter(haier_protocol::ProtocolHandler* protocol_handler, uint8_t parameter, uint16_t value);
+
+haier_protocol::HandlerError alarm_status_report_answer_handler(haier_protocol::ProtocolHandler* protocol_handler, haier_protocol::FrameType request_type, haier_protocol::FrameType message_type, const uint8_t* data, size_t data_size);

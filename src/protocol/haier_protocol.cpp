@@ -160,6 +160,26 @@ bool ProtocolHandler::write_message_(const HaierMessage &message, bool use_crc)
   return is_success;
 }
 
+void ProtocolHandler::set_answer_timeout(long long answer_timeout_miliseconds)
+{
+  this->set_answer_timeout(std::chrono::milliseconds(answer_timeout_miliseconds));
+}
+
+void ProtocolHandler::set_answer_timeout(std::chrono::milliseconds answer_timeout)
+{
+  this->answer_timeout_interval_ = answer_timeout;
+}
+
+void ProtocolHandler::set_cooldown_interval(long long answer_timeout_miliseconds)
+{
+  this->set_cooldown_interval(std::chrono::milliseconds(answer_timeout_miliseconds));
+}
+
+void ProtocolHandler::set_cooldown_interval(std::chrono::milliseconds answer_timeout)
+{
+  this->cooldown_interval_ = answer_timeout;
+}
+
 void ProtocolHandler::send_message(const HaierMessage& message, bool use_crc, uint8_t num_repeats, std::chrono::milliseconds interval)
 {
   this->outgoing_messages_.push({ message, use_crc, std::min(num_repeats, MAX_PACKET_RETRIES) + 1, interval });
