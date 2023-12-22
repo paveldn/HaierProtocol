@@ -7,9 +7,15 @@
 struct HvacFullStatus {
   esphome::haier::hon_protocol::HaierPacketControl control;
   esphome::haier::hon_protocol::HaierPacketSensors sensors;
+  uint8_t spare[4];
+  esphome::haier::hon_protocol::HaierPacketBigData big_data;
 };
 
 constexpr size_t ALARM_BUF_SIZE = 8;
+
+constexpr size_t USER_DATA_SIZE = sizeof(esphome::haier::hon_protocol::HaierPacketControl) + sizeof(esphome::haier::hon_protocol::HaierPacketSensors);
+
+constexpr size_t BIG_DATA_SIZE = sizeof(HvacFullStatus);
 
 void process_alarms(haier_protocol::ProtocolHandler* protocol_handler);
 

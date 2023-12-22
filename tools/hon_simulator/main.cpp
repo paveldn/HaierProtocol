@@ -65,7 +65,7 @@ void preloop(haier_protocol::ProtocolHandler* handler) {
   }
   if (_trigger_random_alarm) {
     _trigger_random_alarm = false;
-    size_t r = std::rand() % (ALARM_BUF_SIZE * 8);
+    size_t r = esphome::haier::hon_protocol::HON_ALARM_COUNT -   std::rand() % (esphome::haier::hon_protocol::HON_ALARM_COUNT);
     HAIER_LOGI("Random alarm triggered. Alarm code %d", r);
     start_alarm(r);
   }

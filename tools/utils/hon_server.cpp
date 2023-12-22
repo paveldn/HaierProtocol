@@ -19,9 +19,7 @@ bool alarm_stopped;
 constexpr size_t SHORT_ALARM_REPORT_INTERVAL_MS = 300;
 constexpr size_t LONG_ALARM_REPORT_INTERVAL_MS = 5000;
 
-bool alarm_active() {
-  if (alarm_stopped)
-    return false;
+bool has_active_alarms() {
   for (int i = 0; i < ALARM_BUF_SIZE; i++)
     if (alarm_status_buf[i] != 0)
       return true;
@@ -78,9 +76,27 @@ void init_ac_state(HvacFullStatus& state) {
   state.sensors.ch2o_value = 0;
   state.sensors.voc_value = 0;
   state.sensors.co2_value = 0;
+  state.big_data.power[0] = 0;
+  state.big_data.power[0] = 0;
+  state.big_data.indoor_coil_temperature = state.sensors.room_temperature + 40;
+  state.big_data.outdoor_out_air_temperature = state.sensors.outdoor_temperature;
+  state.big_data.outdoor_coil_temperature = state.sensors.outdoor_temperature;
+  state.big_data.outdoor_in_air_temperature = state.sensors.outdoor_temperature;
+  state.big_data.outdoor_defrost_temperature = state.sensors.outdoor_temperature;
+  state.big_data.compressor_frequency = 0;
+  state.big_data.compressor_current[0] = 0;
+  state.big_data.compressor_current[1] = 0;
+  state.big_data.outdoor_fan_status = 0;
+  state.big_data.defrost_status = 0;
+  state.big_data.compressor_status = 0;
+  state.big_data.indoor_fan_status = 0;
+  state.big_data.four_way_valve_status = 0;
+  state.big_data.indoor_electric_heating_status = 0;
+  state.big_data.expansion_valve_open_degree[0] = 0;
+  state.big_data.expansion_valve_open_degree[1] = 0;
   last_alarm_message = std::chrono::steady_clock::now();
   alarm_paused = false;
-  alarm_stopped = false;
+  alarm_stopped = true;
 }
 
 bool is_in_configuration_mode() {
@@ -89,7 +105,7 @@ bool is_in_configuration_mode() {
 
 void process_alarms(haier_protocol::ProtocolHandler* protocol_handler)
 {
-  if (alarm_active() && !protocol_handler->is_waiting_for_answer() && (protocol_handler->get_outgoing_queue_size() == 0)) {
+  if (!alarm_stopped && !protocol_handler->is_waiting_for_answer() && (protocol_handler->get_outgoing_queue_size() == 0)) {
     std::chrono::steady_clock::time_point now = std::chrono::steady_clock::now();
     if (( alarm_paused && (std::chrono::duration_cast<std::chrono::milliseconds>(now - last_alarm_message).count() > LONG_ALARM_REPORT_INTERVAL_MS)) ||
         (!alarm_paused && (std::chrono::duration_cast<std::chrono::milliseconds>(now - last_alarm_message).count() > SHORT_ALARM_REPORT_INTERVAL_MS))) {
@@ -110,17 +126,16 @@ HvacFullStatus& get_ac_state_ref() {
 }
 
 bool start_alarm(uint8_t alarm_id) {
-  if (alarm_id >= ALARM_BUF_SIZE * 8)
+  if (alarm_id >= esphome::haier::hon_protocol::HON_ALARM_COUNT)
     return false;
   alarm_paused = false;
   alarm_stopped = false;
-  alarm_status_buf[(uint8_t)(alarm_id / 8)] |= (1 << (alarm_id % 8));
+  alarm_status_buf[ALARM_BUF_SIZE - 1 - (uint8_t)(alarm_id / 8)] |= (1 << (alarm_id % 8));
   return true;
 }
 
 void reset_alarms() {
   memset(alarm_status_buf, 0, sizeof(ALARM_BUF_SIZE));
-  alarm_stopped = false;
   alarm_paused = false;
 }
 
@@ -182,14 +197,14 @@ haier_protocol::HandlerError status_request_handler(haier_protocol::ProtocolHand
         protocol_handler->send_answer(INVALID_MSG);
         return haier_protocol::HandlerError::WRONG_MESSAGE_STRUCTURE;
       }
-      protocol_handler->send_answer(haier_protocol::HaierMessage(haier_protocol::FrameType::STATUS, 0x6D01, (uint8_t*)&ac_status, sizeof(HvacFullStatus)));
+      protocol_handler->send_answer(haier_protocol::HaierMessage(haier_protocol::FrameType::STATUS, 0x6D01, (uint8_t*)&ac_status, USER_DATA_SIZE));
       return haier_protocol::HandlerError::HANDLER_OK;
     case (uint16_t)SubcommandsControl::GET_BIG_DATA:
       if (size != 2) {
         protocol_handler->send_answer(INVALID_MSG);
         return haier_protocol::HandlerError::WRONG_MESSAGE_STRUCTURE;
       }
-      protocol_handler->send_answer(haier_protocol::HaierMessage(haier_protocol::FrameType::STATUS, 0x6D01, (uint8_t*)&ac_status, sizeof(HvacFullStatus)));
+      protocol_handler->send_answer(haier_protocol::HaierMessage(haier_protocol::FrameType::STATUS, 0x7D01, (uint8_t*)&ac_status, BIG_DATA_SIZE));
       return haier_protocol::HandlerError::HANDLER_OK;
     case (uint16_t)SubcommandsControl::SET_GROUP_PARAMETERS:
       if (size - 2 != sizeof(HaierPacketControl)) {
@@ -204,7 +219,7 @@ haier_protocol::HandlerError status_request_handler(haier_protocol::ProtocolHand
           cbyte = buffer[2 + i];
         }
       }
-      protocol_handler->send_answer(haier_protocol::HaierMessage(haier_protocol::FrameType::STATUS, 0x6D5F, (uint8_t*)&ac_status, sizeof(HvacFullStatus)));
+      protocol_handler->send_answer(haier_protocol::HaierMessage(haier_protocol::FrameType::STATUS, 0x6D5F, (uint8_t*)&ac_status, USER_DATA_SIZE));
       return haier_protocol::HandlerError::HANDLER_OK;
     default:
       if ((subcommand & 0xFF00) == (uint16_t)SubcommandsControl::SET_SINGLE_PARAMETER) {
@@ -308,7 +323,10 @@ haier_protocol::HandlerError alarm_status_report_answer_handler(haier_protocol::
   if (request_type == haier_protocol::FrameType::ALARM_STATUS) {
     if (message_type == haier_protocol::FrameType::CONFIRM) {
       if (data_size == 0) {
-        alarm_paused = true;
+        if (!has_active_alarms())
+          alarm_stopped = true;
+        else
+          alarm_paused = true;
         return haier_protocol::HandlerError::HANDLER_OK;
       }
       else
@@ -422,7 +440,7 @@ haier_protocol::HandlerError process_single_parameter(haier_protocol::ProtocolHa
       break;
   }
   if (result == haier_protocol::HandlerError::HANDLER_OK) {
-    protocol_handler->send_answer(haier_protocol::HaierMessage(haier_protocol::FrameType::STATUS, 0x6D01, (uint8_t*)&ac_status, sizeof(HvacFullStatus)));
+    protocol_handler->send_answer(haier_protocol::HaierMessage(haier_protocol::FrameType::STATUS, 0x6D01, (uint8_t*)&ac_status, USER_DATA_SIZE));
   }
   else {
     protocol_handler->send_answer(INVALID_MSG);
