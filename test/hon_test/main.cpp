@@ -24,7 +24,7 @@ haier_protocol::FrameType expected_answers[][2] = {
 	{haier_protocol::FrameType::UNKNOWN_FRAME_TYPE, haier_protocol::FrameType::UNKNOWN_FRAME_TYPE}
 };
 
-haier_protocol::HandlerError client_answers_handler(haier_protocol::FrameType message_type, haier_protocol::FrameType answer_type, const uint8_t* buffer, size_t size) {
+haier_protocol::HandlerError client_answers_handler(haier_protocol::FrameType message_type, haier_protocol::FrameType answer_type, const uint8_t* buffer, size_t size, haier_protocol::AnswerDestination dst) {
 	unsigned int ind = 0;
 	while (expected_answers[ind][0] != haier_protocol::FrameType::UNKNOWN_FRAME_TYPE) {
 		if (message_type == expected_answers[ind][0])

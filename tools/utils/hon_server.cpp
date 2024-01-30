@@ -60,7 +60,7 @@ void init_ac_state(HvacFullStatus& state) {
   state.control.energy_saving_status = 0;
   state.control.cleaning_time_status = 0;
   state.sensors.room_temperature = 18 * 2;
-  state.sensors.room_humidity = 0;
+  state.sensors.room_humidity = 53;
   state.sensors.outdoor_temperature = 10 + 64;
   state.sensors.pm2p5_level = 0;
   state.sensors.air_quality = 0;

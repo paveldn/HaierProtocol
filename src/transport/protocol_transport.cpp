@@ -9,11 +9,7 @@ namespace haier_protocol
 constexpr std::chrono::duration<long long, std::milli> FRAME_TIMEOUT(300);
 
 TransportLevelHandler::TransportLevelHandler(ProtocolStream &stream, size_t buffer_size) noexcept : stream_(stream),
-  buffer_(buffer_size),
-  pos_(0),
-  sep_count_(0),
-  frame_start_found_(false),
-  current_frame_()
+  buffer_(buffer_size)
 {
 }
 
