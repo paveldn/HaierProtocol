@@ -75,7 +75,7 @@ void ProtocolHandler::loop()
           this->outgoing_messages_.push({ 
               data_size == 0 ?  HaierMessage((FrameType)frame.frame.get_frame_type()) : HaierMessage((FrameType)frame.frame.get_frame_type(), frame.frame.get_data(), data_size),
               frame.frame.get_use_crc(),
-              0,
+              1,
               std::chrono::milliseconds::zero(),
               true
             });
