@@ -17,14 +17,19 @@ uint8_t TransportLevelHandler::send_data(uint8_t frame_type, const uint8_t *data
 {
   if (data_size > MAX_FRAME_SIZE - PURE_HEADER_SIZE)
     return 0;
+  HaierFrame frame = HaierFrame(frame_type, data, (uint8_t)data_size, use_crc);
+  return send_data(frame);
+}
+
+uint8_t TransportLevelHandler::send_data(const haier_protocol::HaierFrame& frame)
+{
 #if (HAIER_LOG_LEVEL > 3)
   static char _header[]{"Sending frame: type 00, data:"};
-  const char *_p = hex_map + (frame_type * 2);
+  const char *_p = hex_map + (frame.get_frame_type() * 2);
   _header[20] = _p[0];
   _header[21] = _p[1];
-  HAIER_BUFD(_header, data, data_size);
+  HAIER_BUFD(_header, frame.get_data(), frame.get_data_size());
 #endif
-  HaierFrame frame = HaierFrame(frame_type, data, (uint8_t)data_size, use_crc);
   size_t size = frame.get_buffer_size();
   std::unique_ptr<uint8_t[]> tmp_buf(new uint8_t[size]);
   frame.fill_buffer(tmp_buf.get(), size);

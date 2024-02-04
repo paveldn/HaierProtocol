@@ -60,7 +60,7 @@ void ProtocolHandler::loop()
         if (this->proxy_transport_)
         {
           // If proxy defined redirect frame to proxy transport
-          this->proxy_transport_->send_data(frame.frame.get_frame_type(), frame.frame.get_data(), frame.frame.get_data_size(), frame.frame.get_use_crc());
+          this->proxy_transport_->send_data(frame.frame);
         }
       }
       if (this->proxy_transport_)
@@ -164,19 +164,19 @@ void ProtocolHandler::loop()
       TimestampedFrame frame;
       if (this->transport_.pop(frame))
       {
-        this->proxy_transport_->send_data(frame.frame.get_frame_type(), frame.frame.get_data(), frame.frame.get_data_size(), frame.frame.get_use_crc());
+        this->proxy_transport_->send_data(frame.frame);
+        FrameType msg_type = (FrameType) frame.frame.get_frame_type();
+        HandlerError hres;
+        std::map<FrameType, AnswerHandler>::const_iterator handler = this->answer_handlers_map_.find(last_message_type_);
+        if (handler != this->answer_handlers_map_.end())
+          hres = handler->second(this->last_message_type_, msg_type, frame.frame.get_data(), frame.frame.get_data_size(), AnswerDestination::PROXY_ANSWER);
+        else
+          hres = this->default_answer_handler_(this->last_message_type_, msg_type, frame.frame.get_data(), frame.frame.get_data_size(), AnswerDestination::PROXY_ANSWER);
+        if (hres != HandlerError::HANDLER_OK)
+        {
+          HAIER_LOGW("Proxy answer handler error, msg=%02X, answ=%02X, err=%d", this->last_message_type_, msg_type, hres);
+        }
         this->state_ = ProtocolState::IDLE;
-      }
-      FrameType msg_type = (FrameType) frame.frame.get_frame_type();
-      HandlerError hres;
-      std::map<FrameType, AnswerHandler>::const_iterator handler = this->answer_handlers_map_.find(last_message_type_);
-      if (handler != this->answer_handlers_map_.end())
-        hres = handler->second(this->last_message_type_, msg_type, frame.frame.get_data(), frame.frame.get_data_size(), AnswerDestination::PROXY_ANSWER);
-      else
-        hres = this->default_answer_handler_(this->last_message_type_, msg_type, frame.frame.get_data(), frame.frame.get_data_size(), AnswerDestination::PROXY_ANSWER);
-      if (hres != HandlerError::HANDLER_OK)
-      {
-        HAIER_LOGW("Proxy answer handler error, msg=%02X, answ=%02X, err=%d", this->last_message_type_, msg_type, hres);
       }
     }
     else

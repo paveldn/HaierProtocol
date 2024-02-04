@@ -25,6 +25,7 @@ public:
     explicit TransportLevelHandler(ProtocolStream& stream, size_t buffer_size = MAX_FRAME_SIZE + 0x10) noexcept;
     virtual ~TransportLevelHandler();
     uint8_t send_data(uint8_t frameType, const uint8_t* data, size_t data_size, bool use_crc=true);
+    uint8_t send_data(const HaierFrame& frame);
     size_t read_data();
     void process_data();
     size_t available() const noexcept { return this->incoming_queue_.size(); };
