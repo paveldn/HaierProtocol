@@ -1,8 +1,8 @@
 {
   "name": "HaierProtocol",
-  "version": "0.9.25",
-  "description": "A library to control Haier AC using serial protocol",
-  "keywords": "haier, air-conditioner, uart, serial",
+  "version": "0.9.26",
+  "description": "A library to control Haier smart appliances using serial protocol",
+  "keywords": "haier, hOn, air-conditioner, washing-machine, uart, serial",
   "repository":
   {
     "type": "git",
@@ -12,7 +12,7 @@
   {
     "name": "Pavlo Dudnytskyi",
     "email": "paveldudn@gmail.com",
-    "url": "https://www.linkedin.com/in/pavel-dudnytskyi-15191118/"
+    "url": "https://www.linkedin.com/in/pavlo-dudnytskyi/"
   },
   "export":
   {
