@@ -89,7 +89,15 @@ void ProtocolHandler::loop()
           if (this->write_message_(msg.message, msg.use_crc))
           {
             this->last_message_type_ = msg.message.get_frame_type();
-            this->state_ = msg.proxy_message ? ProtocolState::WAITING_FOR_PROXY_ANSWER : ProtocolState::WAITING_FOR_ANSWER;
+            if (msg.proxy_message)
+            {
+              this->state_ = ProtocolState::WAITING_FOR_PROXY_ANSWER;
+            }
+            else
+            {
+              this->state_ = ProtocolState::WAITING_FOR_ANSWER;
+              last_message_time_point_ = now;
+            }
             this->answer_time_point_ = now + this->answer_timeout_interval_;
             this->retry_time_point_ = now + msg.retry_interval;
           }
@@ -126,6 +134,8 @@ void ProtocolHandler::loop()
     }
     if (this->transport_.available() > 0)
     {
+      
+      HAIER_LOGD("Answer delay: %dms", std::chrono::duration_cast<std::chrono::milliseconds>(now - this->last_message_time_point_).count());
       TimestampedFrame frame;
       this->transport_.pop(frame);
       FrameType msg_type = (FrameType) frame.frame.get_frame_type();

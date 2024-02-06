@@ -122,6 +122,7 @@ protected:
     std::chrono::steady_clock::time_point   cooldown_time_point_;
     std::chrono::steady_clock::time_point   answer_time_point_;
     std::chrono::steady_clock::time_point   retry_time_point_;
+    std::chrono::steady_clock::time_point   last_message_time_point_;
 };
 
 
