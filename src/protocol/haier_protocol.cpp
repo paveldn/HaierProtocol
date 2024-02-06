@@ -10,6 +10,10 @@ constexpr uint8_t MAX_PACKET_RETRIES = 9;
 constexpr std::chrono::milliseconds DEFAULT_ANSWER_TIMEOUT = std::chrono::milliseconds(200);
 constexpr std::chrono::milliseconds DEFAULT_COOLDOWN_INTERVAL = std::chrono::milliseconds(400);
 
+#if HAIER_LOG_LEVEL > 3
+  static std::chrono::steady_clock::time_point last_message_sent_;
+#endif
+
 ProtocolHandler::ProtocolHandler(ProtocolStream &stream) noexcept : transport_(stream),
   message_handlers_map_(),
   answer_handlers_map_(),
@@ -118,6 +122,9 @@ void ProtocolHandler::loop()
     }
     if (this->transport_.available() > 0)
     {
+#if HAIER_LOG_LEVEL > 3
+      HAIER_LOGD("Answer delay %dms", std::chrono::duration_cast<std::chrono::milliseconds>(now - last_message_sent_));
+#endif
       TimestampedFrame frame;
       this->transport_.pop(frame);
       FrameType msg_type = (FrameType) frame.frame.get_frame_type();
@@ -156,7 +163,11 @@ bool ProtocolHandler::write_message_(const HaierMessage &message, bool use_crc)
   {
     HAIER_LOGE("Error sending message: %02X", frame_type);
   }
-  this->cooldown_time_point_ = std::chrono::steady_clock::now() + this->cooldown_interval_;
+  std::chrono::steady_clock::time_point now = std::chrono::steady_clock::now();
+#if HAIER_LOG_LEVEL > 3
+  last_message_sent_ = now;
+#endif
+  this->cooldown_time_point_ = now + this->cooldown_interval_;
   return is_success;
 }
 
