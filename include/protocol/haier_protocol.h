@@ -62,6 +62,7 @@ public:
     void set_cooldown_interval(long long answer_timeout_miliseconds);
     void set_cooldown_interval(std::chrono::milliseconds answer_timeout);
     void send_message(const HaierMessage& message, bool use_crc, uint8_t num_retries = 0, std::chrono::milliseconds interval = std::chrono::milliseconds::zero());
+    void send_message_without_answer(const HaierMessage& message, bool use_crc);
     void send_answer(const HaierMessage& answer);
     void send_answer(const HaierMessage& answer, bool use_crc);
     void set_message_handler(FrameType message_type, MessageHandler handler);
@@ -85,6 +86,7 @@ protected:
     {
         const HaierMessage message;
         bool use_crc;
+        bool no_answer;
         int number_of_retries;
         std::chrono::milliseconds retry_interval;
     };

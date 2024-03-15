@@ -128,6 +128,26 @@ int main(int argc, char** argv) {
 		hon_client.loop();
 		hon_server.loop();
 	}
+	// Some of the appliances (washing machines) take longer than a second to send the status answer
+	// For these devices, it is better to request data without waiting for an answerand process the answer as the incoming message.
+	// Testing mechanism to request message without expecting answer and process answer as a new message 
+	hon_client.set_message_handler(haier_protocol::FrameType::STATUS,
+		[] (haier_protocol::FrameType message_type, const uint8_t* data, size_t data_size) -> haier_protocol::HandlerError {
+			if (message_type == haier_protocol::FrameType::STATUS)
+				HAIER_LOGI("Received an answer as a new message, type 0x%02X", message_type);
+			else
+				return haier_protocol::default_message_handler(message_type, data, data_size);
+			return haier_protocol::HandlerError::HANDLER_OK;
+		});
+	std::this_thread::sleep_for(std::chrono::milliseconds(500));
+	{
+		const haier_protocol::HaierMessage status_request_message(haier_protocol::FrameType::CONTROL, (uint16_t)SubcommandsControl::GET_USER_DATA);
+		hon_client.send_message_without_answer(status_request_message, true);
+		hon_client.loop();
+		hon_server.loop();
+		hon_client.loop();
+		hon_server.loop();
+	}	
 	if (memcmp(&ac_full_state.control, &get_ac_state_ref().control, sizeof(HaierPacketControl)) == 0) {
 		HAIER_LOGI("AC control processed correctly");
 	} else {

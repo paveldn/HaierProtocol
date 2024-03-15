@@ -72,7 +72,7 @@ void ProtocolHandler::loop()
         }
         else if (!this->answer_sent_)
         {
-          HAIER_LOGW("No answer sent in incoming messages handler, message type %02X", msg_type);
+          HAIER_LOGI("No answer sent in incoming messages handler, message type %02X", msg_type);
         }
       }
       {
@@ -84,9 +84,17 @@ void ProtocolHandler::loop()
             if (this->write_message_(msg.message, msg.use_crc))
             {
               this->last_message_type_ = msg.message.get_frame_type();
-              this->state_ = ProtocolState::WAITING_FOR_ANSWER;
-              this->answer_time_point_ = now + this->answer_timeout_interval_;
-              this->retry_time_point_ = now + msg.retry_interval;
+              if (msg.no_answer)
+              {
+                this->outgoing_messages_.pop();
+                this->retry_time_point_ = now;
+              }
+              else
+              {
+                this->state_ = ProtocolState::WAITING_FOR_ANSWER;
+                this->answer_time_point_ = now + this->answer_timeout_interval_;
+                this->retry_time_point_ = now + msg.retry_interval;
+              }
             }
             msg.number_of_retries--;
           } else {
@@ -193,7 +201,12 @@ void ProtocolHandler::set_cooldown_interval(std::chrono::milliseconds answer_tim
 
 void ProtocolHandler::send_message(const HaierMessage& message, bool use_crc, uint8_t num_repeats, std::chrono::milliseconds interval)
 {
-  this->outgoing_messages_.push({ message, use_crc, std::min(num_repeats, MAX_PACKET_RETRIES) + 1, interval });
+  this->outgoing_messages_.push({ message, use_crc, false, std::min(num_repeats, MAX_PACKET_RETRIES) + 1, interval });
+}
+
+void ProtocolHandler::send_message_without_answer(const HaierMessage& message, bool use_crc)
+{
+  this->outgoing_messages_.push({ message, use_crc, true, 1, std::chrono::milliseconds::zero() });
 }
 
 void ProtocolHandler::send_answer(const HaierMessage &answer)
