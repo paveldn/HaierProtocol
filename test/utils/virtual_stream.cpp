@@ -8,7 +8,7 @@ VirtualStream::VirtualStream(CircularBuffer<uint8_t>& tx_buffer, CircularBuffer<
 }
 
 size_t VirtualStream::available() noexcept {
-	return this->rx_buffer_.get_available();
+	return this->rx_buffer_.get_size();
 }
 size_t VirtualStream::read_array(uint8_t* data, size_t len) noexcept {
 	return this->rx_buffer_.pop(data, len);

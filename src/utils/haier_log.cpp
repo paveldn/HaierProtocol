@@ -95,6 +95,11 @@ size_t log_haier(HaierLogLevel level, const char *format, ...)
 
 size_t log_haier_buffer(HaierLogLevel level, const char *header, const uint8_t *buffer, size_t size)
 {
+  return log_haier_buffers(level, header, buffer, size, nullptr, 0);
+}
+
+size_t log_haier_buffers(HaierLogLevel level, const char *header, const uint8_t *buffer1, size_t size1, const uint8_t *buffer2, size_t size2)
+{
   size_t res = 0;
   if ((global_log_handler != nullptr) && (level != HaierLogLevel::LEVEL_NONE))
   {
@@ -110,10 +115,20 @@ size_t log_haier_buffer(HaierLogLevel level, const char *header, const uint8_t *
       }
       msg_buffer[res++] = ' ';
     }
-    if ((buffer != nullptr) && (size > 0))
-      res += print_buf(buffer, size, msg_buffer + res, BUFFER_SIZE - res);
-    else
+    if (size1 + size2 == 0)
       res += snprintf(msg_buffer + res, BUFFER_SIZE - res - 1, "<empty>");
+    else
+    {
+      if ((buffer1 != nullptr) && (size1 > 0))
+      {
+        res += print_buf(buffer1, size1, msg_buffer + res, BUFFER_SIZE - res);
+        if ((BUFFER_SIZE - res > 0) && (size2 > 0))
+        {
+          msg_buffer[res++] = ' ';
+          res += print_buf(buffer2, size2, msg_buffer + res, BUFFER_SIZE - res);
+        }
+      }
+    }
     global_log_handler(level, HAIER_LOG_TAG, msg_buffer);
   }
   return res;

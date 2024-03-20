@@ -39,6 +39,47 @@ uint8_t TransportLevelHandler::send_data(uint8_t frame_type, const uint8_t *data
 
 size_t TransportLevelHandler::read_data()
 {
+  size_t count = this->stream_.available();
+  if (count >= this->buffer_.get_capacity())
+    count = this->buffer_.get_capacity();
+  // Need to make space
+  size_t available = this->buffer_.get_space();
+  if (count > available)
+  {
+    this->drop_bytes_(count - available);
+    if (this->frame_start_found_)
+    {
+      // Resetting frame because we will lose it start
+      HAIER_LOGW("Frame lost because of buffer overflow");
+      this->pos_ = 0;
+      this->sep_count_ = 0;
+      this->frame_start_found_ = false;
+      this->current_frame_.reset();
+    }
+  }
+  size_t size1 = count;
+  size_t size2 = 0;
+  uint8_t *buf1 = this->buffer_.reserve(size1);
+  uint8_t *buf2 = nullptr;
+  size1 = this->stream_.read_array(buf1, size1);
+  if (count > size1)
+  {
+    size2 = count - size1;
+    buf2 = this->buffer_.reserve(size2);
+    size2 = this->stream_.read_array(buf2, size2);
+  }
+#if (HAIER_LOG_LEVEL > 4)
+  if (size1 + size2 > 0)
+  {
+    log_haier_buffers(haier_protocol::HaierLogLevel::LEVEL_VERBOSE, "Received data:", buf1, size1, buf2, size2);
+  }
+#endif
+  return size1 + size2;
+}
+
+#if 0
+size_t TransportLevelHandler::read_data()
+{
   size_t bytes_read = 0;
   uint8_t val;
   size_t count = this->stream_.available();
@@ -50,7 +91,6 @@ size_t TransportLevelHandler::read_data()
 #if (HAIER_LOG_LEVEL > 4)
     out_buf[bytes_read] = val;
 #endif
-    // IF there is 0xFF 0x55 replace it with 0xFF
     if (this->buffer_.push(val) == 0)
       break;
     bytes_read++;
@@ -63,6 +103,7 @@ size_t TransportLevelHandler::read_data()
 #endif
   return bytes_read;
 }
+#endif
 
 void TransportLevelHandler::process_data()
 {
@@ -82,7 +123,7 @@ void TransportLevelHandler::process_data()
   }
   if (!this->buffer_.empty())
   {
-    size_t buf_size = this->buffer_.get_available();
+    size_t buf_size = this->buffer_.get_size();
     int bytes_to_drop = 0;
     while (this->pos_ < buf_size)
     {
@@ -147,7 +188,7 @@ void TransportLevelHandler::process_data()
               this->current_frame_.reset();
               pos_ = 0;
               sep_count_ = 0;
-              buf_size = buffer_.get_available();
+              buf_size = buffer_.get_size();
               frame_start_found_ = false;
               continue;
             }
@@ -192,7 +233,7 @@ void TransportLevelHandler::process_data()
               this->current_frame_.reset();
               this->pos_ = 0;
               this->sep_count_ = 0;
-              buf_size = buffer_.get_available();
+              buf_size = buffer_.get_size();
               this->frame_start_found_ = false;
               continue;
             }
@@ -218,7 +259,7 @@ void TransportLevelHandler::process_data()
             this->current_frame_.reset();
             this->pos_ = 0;
             this->sep_count_ = 0;
-            buf_size = this->buffer_.get_available();
+            buf_size = this->buffer_.get_size();
             this->frame_start_found_ = false;
             continue;
           }
@@ -245,7 +286,7 @@ void TransportLevelHandler::process_data()
 void TransportLevelHandler::reset_protocol() noexcept
 {
   this->current_frame_.reset();
-  size_t bytesToDrop = this->buffer_.get_available();
+  size_t bytesToDrop = this->buffer_.get_size();
   if (pos_ < bytesToDrop)
     bytesToDrop = pos_;
   this->drop_bytes_(bytesToDrop);
@@ -278,7 +319,7 @@ TransportLevelHandler::~TransportLevelHandler()
 
 void TransportLevelHandler::clear_()
 {
-  HAIER_LOGV("Clearing buffer, data size: %d", this->buffer_.get_available());
+  HAIER_LOGV("Clearing buffer, data size: %d", this->buffer_.get_size());
   this->buffer_.clear();
   this->pos_ = 0;
   this->sep_count_ = 0;

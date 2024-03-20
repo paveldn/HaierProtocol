@@ -10,7 +10,7 @@ class TestStream : public haier_protocol::ProtocolStream
 {
 public:
     TestStream() : mBuffer(2000) {};
-    virtual size_t		available() noexcept { return mBuffer.get_available(); };
+    virtual size_t		available() noexcept { return mBuffer.get_size(); };
     virtual size_t		read_array(uint8_t* data, size_t len) noexcept;
     virtual void		write_array(const uint8_t* data, size_t len) noexcept;
     void addByte(uint8_t val);
@@ -21,7 +21,7 @@ private:
 
 size_t TestStream::read_array(uint8_t* data, size_t len) noexcept
 {
-    size_t toRead = mBuffer.get_available();
+    size_t toRead = mBuffer.get_size();
     if (len < toRead)
         toRead = len;
     return mBuffer.pop(data, toRead);

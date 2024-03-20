@@ -46,12 +46,12 @@ size_t SerialStream::available() noexcept {
         else
             return 0;
     }
-    return buffer_.get_available();
+    return buffer_.get_size();
 };
 size_t SerialStream::read_array(uint8_t* data, size_t len) noexcept {
     if (!is_valid() || buffer_.empty())
         return 0;
-    size_t av = buffer_.get_available();
+    size_t av = buffer_.get_size();
     if (av < len)
         len = av;
     return buffer_.pop(data, len);
