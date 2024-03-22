@@ -43,6 +43,30 @@ haier_protocol::HandlerError client_answers_handler(haier_protocol::FrameType me
 	return haier_protocol::HandlerError::HANDLER_OK;
 }
 
+haier_protocol::HandlerError get_status_message_handler(haier_protocol::ProtocolHandler* protocol_handler, haier_protocol::FrameType type, const uint8_t* buffer, size_t size) {
+	// This function is processing answer as incomming message
+	// Some of the appliances (washing machines) take longer than a second to send the status answer
+	// For these devices, it is better to request data without waiting for an answerand process the answer as the incoming message.
+	// Testing mechanism to request message without expecting answer and process answer as a new message
+	static bool do_not_supress_warning = true;
+	if (type == haier_protocol::FrameType::STATUS)
+		HAIER_LOGI("Received an answer as a new message, type 0x%02X", type);
+	else
+		return haier_protocol::default_message_handler(type, buffer, size);
+	if (!do_not_supress_warning)
+		protocol_handler->no_answer();
+	else
+		do_not_supress_warning = false;
+	return haier_protocol::HandlerError::HANDLER_OK; 
+}
+
+#define CLIENT_SERVER_LOOP()	{ \
+									hon_client.loop(); \
+									hon_server.loop(); \
+									hon_client.loop(); \
+									hon_server.loop(); \
+								} while(0)
+
 int main(int argc, char** argv) {
 	VirtualStreamHolder stream_holder;
 	haier_protocol::set_log_handler(console_logger);
@@ -58,63 +82,66 @@ int main(int argc, char** argv) {
 	haier_protocol::ProtocolHandler hon_client(client_stream);
 	ac_full_state = get_ac_state_ref();
 	hon_client.set_default_answer_handler(client_answers_handler);
+	hon_client.set_message_handler(haier_protocol::FrameType::STATUS, std::bind(get_status_message_handler, &hon_client, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
+#if defined(RUN_ALL_TESTS) || defined(RUN_TEST1)
 	{
+		HAIER_LOGI("Test #1");
 		uint8_t module_capabilities[2] = { 0b00000000, 0b00000111 };
 		const haier_protocol::HaierMessage device_version_request_message(haier_protocol::FrameType::GET_DEVICE_VERSION, module_capabilities, sizeof(module_capabilities));
 		hon_client.send_message(device_version_request_message, false);
-		hon_client.loop();
-		hon_server.loop();
-		hon_client.loop();
-		hon_server.loop();
+		CLIENT_SERVER_LOOP();
 	}
 	std::this_thread::sleep_for(std::chrono::milliseconds(500));
+#endif
+#if defined(RUN_ALL_TESTS) || defined(RUN_TEST2)
 	{
+		HAIER_LOGI("Test #2");
 		const haier_protocol::HaierMessage device_request_message(haier_protocol::FrameType::GET_DEVICE_ID);
 		hon_client.send_message(device_request_message, true);
-		hon_client.loop();
-		hon_server.loop();
-		hon_client.loop();
-		hon_server.loop();
+		CLIENT_SERVER_LOOP();
 	}
 	std::this_thread::sleep_for(std::chrono::milliseconds(500));
+#endif
+#if defined(RUN_ALL_TESTS) || defined(RUN_TEST3)
 	{
+		HAIER_LOGI("Test #3");
 		const haier_protocol::HaierMessage status_request_message(haier_protocol::FrameType::CONTROL, (uint16_t)SubcommandsControl::GET_USER_DATA);
 		hon_client.send_message(status_request_message, true);
-		hon_client.loop();
-		hon_server.loop();
-		hon_client.loop();
-		hon_server.loop();
+		CLIENT_SERVER_LOOP();
 	}
 	std::this_thread::sleep_for(std::chrono::milliseconds(500));
+#endif
+#if defined(RUN_ALL_TESTS) || defined(RUN_TEST4)
 	{
+		HAIER_LOGI("Test #4");
 		const haier_protocol::HaierMessage alarm_status_request_message(haier_protocol::FrameType::GET_ALARM_STATUS);
 		hon_client.send_message(alarm_status_request_message, true);
-		hon_client.loop();
-		hon_server.loop();
-		hon_client.loop();
-		hon_server.loop();
+		CLIENT_SERVER_LOOP();
 	}
 	std::this_thread::sleep_for(std::chrono::milliseconds(500));
+#endif
+#if defined(RUN_ALL_TESTS) || defined(RUN_TEST5)
 	{
+		HAIER_LOGI("Test #5");
 		const haier_protocol::HaierMessage update_signal_request(haier_protocol::FrameType::GET_MANAGEMENT_INFORMATION);
 		hon_client.send_message(update_signal_request, true);
-		hon_client.loop();
-		hon_server.loop();
-		hon_client.loop();
-		hon_server.loop();
+		CLIENT_SERVER_LOOP();
 	}
 	std::this_thread::sleep_for(std::chrono::milliseconds(500));
+#endif
+#if defined(RUN_ALL_TESTS) || defined(RUN_TEST6)
 	{
+		HAIER_LOGI("Test #6");
 		const uint8_t wifi_status_data[4] = { 0x00, 0x01, 0x00, 0x37 };
 		haier_protocol::HaierMessage wifi_status_request(haier_protocol::FrameType::REPORT_NETWORK_STATUS, wifi_status_data, sizeof(wifi_status_data));
 		hon_client.send_message(wifi_status_request, true);
-		hon_client.loop();
-		hon_server.loop();
-		hon_client.loop();
-		hon_server.loop();
+		CLIENT_SERVER_LOOP();
 	}
 	std::this_thread::sleep_for(std::chrono::milliseconds(500));
+#endif
+#if defined(RUN_ALL_TESTS) || defined(RUN_TEST7)
 	{
+		HAIER_LOGI("Test #7");
 		ac_full_state.control.ac_power = true;
 		ac_full_state.control.ac_mode = (uint8_t) ConditioningMode::HEALTHY_DRY;
 		ac_full_state.control.fan_mode = (uint8_t) FanMode::FAN_MID;
@@ -123,39 +150,38 @@ int main(int argc, char** argv) {
 		ac_full_state.control.display_status = 0;
 		haier_protocol::HaierMessage control_message(haier_protocol::FrameType::CONTROL, (uint16_t)SubcommandsControl::SET_GROUP_PARAMETERS, (uint8_t*)&ac_full_state.control, sizeof(HaierPacketControl));
 		hon_client.send_message(control_message, true);
-		hon_client.loop();
-		hon_server.loop();
-		hon_client.loop();
-		hon_server.loop();
+		CLIENT_SERVER_LOOP();
+		if (memcmp(&ac_full_state.control, &get_ac_state_ref().control, sizeof(HaierPacketControl)) == 0) {
+			HAIER_LOGI("AC control processed correctly");
+		}
+		else {
+			HAIER_LOGW("AC control not OK");
+		}
 	}
-	// Some of the appliances (washing machines) take longer than a second to send the status answer
-	// For these devices, it is better to request data without waiting for an answerand process the answer as the incoming message.
-	// Testing mechanism to request message without expecting answer and process answer as a new message 
-	hon_client.set_message_handler(haier_protocol::FrameType::STATUS,
-		[] (haier_protocol::FrameType message_type, const uint8_t* data, size_t data_size) -> haier_protocol::HandlerError {
-			if (message_type == haier_protocol::FrameType::STATUS)
-				HAIER_LOGI("Received an answer as a new message, type 0x%02X", message_type);
-			else
-				return haier_protocol::default_message_handler(message_type, data, data_size);
-			return haier_protocol::HandlerError::HANDLER_OK;
-		});
 	std::this_thread::sleep_for(std::chrono::milliseconds(500));
+#endif
+#if defined(RUN_ALL_TESTS) || defined(RUN_TEST8)
 	{
+		// Sending status request without answer, first time we will get warning
+		HAIER_LOGI("Test #8");
 		const haier_protocol::HaierMessage status_request_message(haier_protocol::FrameType::CONTROL, (uint16_t)SubcommandsControl::GET_USER_DATA);
 		hon_client.send_message_without_answer(status_request_message, true);
-		hon_client.loop();
-		hon_server.loop();
-		hon_client.loop();
-		hon_server.loop();
-	}	
-	if (memcmp(&ac_full_state.control, &get_ac_state_ref().control, sizeof(HaierPacketControl)) == 0) {
-		HAIER_LOGI("AC control processed correctly");
-	} else {
-		HAIER_LOGW("AC control not OK");
+		CLIENT_SERVER_LOOP();
+		std::this_thread::sleep_for(std::chrono::milliseconds(500));
+		// Sending another status request. Should be no warning this time
+		hon_client.send_message_without_answer(status_request_message, true);
+		CLIENT_SERVER_LOOP();
 	}
+#endif
 	unsigned int warn = get_warnings_count();
 	unsigned int  errors = get_errors_count();
-	std::cout << "Test results, warning: " << warn << " errors: " << errors << std::endl;
-	if ((warn != 0) || (errors != 0))
+	constexpr int expected_warnings = 0 +
+#if defined(RUN_ALL_TESTS) || defined(RUN_TEST8)
+		1 +
+#endif
+		0;
+
+	std::cout << "Test results, warning: " << warn << ", expected: " << expected_warnings << ", errors: " << errors << std::endl;
+	if ((warn != expected_warnings) || (errors != 0))
 		exit(1);
 }

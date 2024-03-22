@@ -65,6 +65,8 @@ public:
     void send_message_without_answer(const HaierMessage& message, bool use_crc);
     void send_answer(const HaierMessage& answer);
     void send_answer(const HaierMessage& answer, bool use_crc);
+    // Use this function to suppress warning if you don't answer an appliance request on purpose
+    void no_answer();
     void set_message_handler(FrameType message_type, MessageHandler handler);
     void remove_message_handler(FrameType message_type);
     void set_default_message_handler(MessageHandler handler);

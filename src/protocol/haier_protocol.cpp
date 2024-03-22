@@ -72,7 +72,7 @@ void ProtocolHandler::loop()
         }
         else if (!this->answer_sent_)
         {
-          HAIER_LOGI("No answer sent in incoming messages handler, message type %02X", msg_type);
+          HAIER_LOGW("No answer sent in incoming messages handler, message type %02X", msg_type);
         }
       }
       {
@@ -225,6 +225,13 @@ void ProtocolHandler::send_answer(const HaierMessage& answer, bool use_crc)
         HAIER_LOGE("Answer can be send only from message handler!");
     }
 }
+
+void ProtocolHandler::no_answer()
+{
+  if (this->processing_message_)
+    this->answer_sent_ = true;
+}
+
 
 void ProtocolHandler::set_message_handler(FrameType message_type, MessageHandler handler)
 {
