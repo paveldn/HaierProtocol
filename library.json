@@ -1,6 +1,6 @@
 {
   "name": "HaierProtocol",
-  "version": "0.9.28",
+  "version": "0.9.29",
   "description": "A library to control Haier smart appliances using serial protocol",
   "keywords": "haier, hOn, air-conditioner, washing-machine, uart, serial",
   "repository":

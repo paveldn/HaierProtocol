@@ -14,7 +14,11 @@ constexpr std::chrono::milliseconds DEFAULT_COOLDOWN_INTERVAL = std::chrono::mil
   static std::chrono::steady_clock::time_point last_message_sent_;
 #endif
 
-ProtocolHandler::ProtocolHandler(ProtocolStream &stream) noexcept : transport_(stream),
+ProtocolHandler::ProtocolHandler(ProtocolStream &stream) noexcept : ProtocolHandler(stream, MAX_FRAME_SIZE + 10)
+{
+}
+
+ProtocolHandler::ProtocolHandler(ProtocolStream& stream, size_t buffer_size) noexcept : transport_(stream, buffer_size),
   message_handlers_map_(),
   answer_handlers_map_(),
   timeout_handlers_map_(),

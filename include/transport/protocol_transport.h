@@ -22,7 +22,7 @@ class TransportLevelHandler
 public:
     TransportLevelHandler(const TransportLevelHandler&) = delete;
     TransportLevelHandler& operator=(const TransportLevelHandler&) = delete;
-    explicit TransportLevelHandler(ProtocolStream& stream, size_t buffer_size = MAX_FRAME_SIZE + 0x10) noexcept;
+    explicit TransportLevelHandler(ProtocolStream& stream, size_t buffer_size) noexcept;
     uint8_t send_data(uint8_t frameType, const uint8_t* data, size_t data_size, bool use_crc=true);
     size_t read_data();
     void process_data();

@@ -55,6 +55,7 @@ public:
     ProtocolHandler(const ProtocolHandler&) = delete;
     ProtocolHandler& operator=(const ProtocolHandler&) = delete;
     explicit ProtocolHandler(ProtocolStream&) noexcept;
+    ProtocolHandler(ProtocolStream&, size_t) noexcept;
     size_t get_outgoing_queue_size() const noexcept {return this->outgoing_messages_.size(); };
     bool is_waiting_for_answer() const {return (this->state_ == ProtocolState::WAITING_FOR_ANSWER); };
     void set_answer_timeout(long long answer_timeout_miliseconds);
