@@ -26,6 +26,7 @@ public:
     uint8_t send_data(uint8_t frameType, const uint8_t* data, size_t data_size, bool use_crc=true);
     size_t read_data();
     void process_data();
+    size_t get_buffer_size() noexcept { return this->buffer_.get_capacity(); };
     size_t available() const noexcept { return this->incoming_queue_.size(); };
     bool pop(TimestampedFrame& tframe);
     void drop(size_t frames_count);

@@ -9,6 +9,7 @@
 #include "smartair2_packet.h"
 #include "smartair2_server.h"
 #include "console_log.h"
+#include "test_macro.h"
 
 using namespace esphome::haier::smartair2_protocol;
 
@@ -52,7 +53,9 @@ int main(int argc, char** argv) {
 	haier_protocol::ProtocolHandler smartair2_client(client_stream);
 	ac_full_state = get_ac_state_ref();
 	smartair2_client.set_default_answer_handler(client_answers_handler);
+#if defined(RUN_ALL_TESTS) || defined(RUN_TEST1)
 	{
+		TEST_START(1);
 		uint8_t module_capabilities[2] = { 0b00000000, 0b00000111 };
 		const haier_protocol::HaierMessage device_version_request_message(haier_protocol::FrameType::GET_DEVICE_VERSION, module_capabilities, sizeof(module_capabilities));
 		smartair2_client.send_message(device_version_request_message, false, 3);
@@ -65,32 +68,45 @@ int main(int argc, char** argv) {
 			smartair2_client.loop();
 			smartair2_server.loop();
 		}
+		TEST_END(2, 0);
 	}
+#endif
+#if defined(RUN_ALL_TESTS) || defined(RUN_TEST2)
 	{
 		// Unsupported message
+		TEST_START(2);
+		constexpr size_t ATTEMPTS_NUM = 3;
 		const haier_protocol::HaierMessage unsupported_request_message(haier_protocol::FrameType::DOWNLINK_TRANSPARENT_TRANSMISSION);
-		smartair2_client.send_message(unsupported_request_message, false, 3);
+		smartair2_client.send_message(unsupported_request_message, false, ATTEMPTS_NUM - 1);
 		smartair2_client.loop();
 		smartair2_server.loop();
 		smartair2_client.loop();
 		smartair2_server.loop();
-		for (int i = 0; i <= 6; i++) {
+		for (int i = 0; i <= 2 * ATTEMPTS_NUM; i++) {
 			std::this_thread::sleep_for(std::chrono::milliseconds(500));
 			smartair2_client.loop();
 			smartair2_server.loop();
 		}
+		TEST_END(2 * ATTEMPTS_NUM + 1, 0);
+		std::this_thread::sleep_for(std::chrono::milliseconds(500));
 	}
-	std::this_thread::sleep_for(std::chrono::milliseconds(500));
+#endif
+#if defined(RUN_ALL_TESTS) || defined(RUN_TEST3)
 	{
+		TEST_START(3);
 		const haier_protocol::HaierMessage status_request_message(haier_protocol::FrameType::CONTROL, 0x4D01);
 		smartair2_client.send_message(status_request_message, false);
 		smartair2_client.loop();
 		smartair2_server.loop();
 		smartair2_client.loop();
 		smartair2_server.loop();
+		TEST_END(0, 0);
+		std::this_thread::sleep_for(std::chrono::milliseconds(500));
 	}
-	std::this_thread::sleep_for(std::chrono::milliseconds(500));
+#endif
+#if defined(RUN_ALL_TESTS) || defined(RUN_TEST4)
 	{
+		TEST_START(4);
 		const uint8_t wifi_status_data[4] = { 0x00, 0x01, 0x00, 0x37 };
 		haier_protocol::HaierMessage wifi_status_request(haier_protocol::FrameType::REPORT_NETWORK_STATUS, wifi_status_data, sizeof(wifi_status_data));
 		smartair2_client.send_message(wifi_status_request, false);
@@ -98,9 +114,13 @@ int main(int argc, char** argv) {
 		smartair2_server.loop();
 		smartair2_client.loop();
 		smartair2_server.loop();
+		TEST_END(0, 0);
+		std::this_thread::sleep_for(std::chrono::milliseconds(500));
 	}
-	std::this_thread::sleep_for(std::chrono::milliseconds(500));
+#endif
+#if defined(RUN_ALL_TESTS) || defined(RUN_TEST5)
 	{
+		TEST_START(5);
 		ac_full_state.ac_power = true;
 		ac_full_state.ac_mode = (uint8_t)ConditioningMode::COOL;
 		ac_full_state.display_status = 0;
@@ -110,17 +130,15 @@ int main(int argc, char** argv) {
 		smartair2_server.loop();
 		smartair2_client.loop();
 		smartair2_server.loop();
+		if (memcmp(&ac_full_state, &get_ac_state_ref(), sizeof(HaierPacketControl)) == 0) {
+			HAIER_LOGI("AC control processed correctly");
+		}
+		else {
+			HAIER_LOGW("AC control not OK");
+		}
+		TEST_END(0, 0);
 	}
-	if (memcmp(&ac_full_state, &get_ac_state_ref(), sizeof(HaierPacketControl)) == 0) {
-		HAIER_LOGI("AC control processed correctly");
-	}
-	else {
-		HAIER_LOGW("AC control not OK");
-	}
-	unsigned int warn = get_warnings_count();
-	unsigned int  errors = get_errors_count();
-	std::cout << "Test results, warning: " << warn << " errors: " << errors << std::endl;
-	if ((warn != 11) || (errors != 0))
-		exit(1);
+#endif
+	HAIER_LOGI("All tests successfully finished!");
 }
 

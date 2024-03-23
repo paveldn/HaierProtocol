@@ -9,6 +9,7 @@
 #include "hon_packet.h"
 #include "hon_server.h"
 #include "console_log.h"
+#include "test_macro.h"
 
 using namespace esphome::haier::hon_protocol;
 
@@ -85,63 +86,69 @@ int main(int argc, char** argv) {
 	hon_client.set_message_handler(haier_protocol::FrameType::STATUS, std::bind(get_status_message_handler, &hon_client, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
 #if defined(RUN_ALL_TESTS) || defined(RUN_TEST1)
 	{
-		HAIER_LOGI("Test #1");
+		TEST_START(1);
 		uint8_t module_capabilities[2] = { 0b00000000, 0b00000111 };
 		const haier_protocol::HaierMessage device_version_request_message(haier_protocol::FrameType::GET_DEVICE_VERSION, module_capabilities, sizeof(module_capabilities));
 		hon_client.send_message(device_version_request_message, false);
 		CLIENT_SERVER_LOOP();
+		TEST_END(0, 0);
 	}
 	std::this_thread::sleep_for(std::chrono::milliseconds(500));
 #endif
 #if defined(RUN_ALL_TESTS) || defined(RUN_TEST2)
 	{
-		HAIER_LOGI("Test #2");
+		TEST_START(2);
 		const haier_protocol::HaierMessage device_request_message(haier_protocol::FrameType::GET_DEVICE_ID);
 		hon_client.send_message(device_request_message, true);
 		CLIENT_SERVER_LOOP();
+		TEST_END(0, 0);
 	}
 	std::this_thread::sleep_for(std::chrono::milliseconds(500));
 #endif
 #if defined(RUN_ALL_TESTS) || defined(RUN_TEST3)
 	{
-		HAIER_LOGI("Test #3");
+		TEST_START(3);
 		const haier_protocol::HaierMessage status_request_message(haier_protocol::FrameType::CONTROL, (uint16_t)SubcommandsControl::GET_USER_DATA);
 		hon_client.send_message(status_request_message, true);
 		CLIENT_SERVER_LOOP();
+		TEST_END(0, 0);
 	}
 	std::this_thread::sleep_for(std::chrono::milliseconds(500));
 #endif
 #if defined(RUN_ALL_TESTS) || defined(RUN_TEST4)
 	{
-		HAIER_LOGI("Test #4");
+		TEST_START(4);
 		const haier_protocol::HaierMessage alarm_status_request_message(haier_protocol::FrameType::GET_ALARM_STATUS);
 		hon_client.send_message(alarm_status_request_message, true);
 		CLIENT_SERVER_LOOP();
+		TEST_END(0, 0);
 	}
 	std::this_thread::sleep_for(std::chrono::milliseconds(500));
 #endif
 #if defined(RUN_ALL_TESTS) || defined(RUN_TEST5)
 	{
-		HAIER_LOGI("Test #5");
+		TEST_START(5);
 		const haier_protocol::HaierMessage update_signal_request(haier_protocol::FrameType::GET_MANAGEMENT_INFORMATION);
 		hon_client.send_message(update_signal_request, true);
 		CLIENT_SERVER_LOOP();
+		TEST_END(0, 0);
 	}
 	std::this_thread::sleep_for(std::chrono::milliseconds(500));
 #endif
 #if defined(RUN_ALL_TESTS) || defined(RUN_TEST6)
 	{
-		HAIER_LOGI("Test #6");
+		TEST_START(6);
 		const uint8_t wifi_status_data[4] = { 0x00, 0x01, 0x00, 0x37 };
 		haier_protocol::HaierMessage wifi_status_request(haier_protocol::FrameType::REPORT_NETWORK_STATUS, wifi_status_data, sizeof(wifi_status_data));
 		hon_client.send_message(wifi_status_request, true);
 		CLIENT_SERVER_LOOP();
+		TEST_END(0, 0);
 	}
 	std::this_thread::sleep_for(std::chrono::milliseconds(500));
 #endif
 #if defined(RUN_ALL_TESTS) || defined(RUN_TEST7)
 	{
-		HAIER_LOGI("Test #7");
+		TEST_START(7);
 		ac_full_state.control.ac_power = true;
 		ac_full_state.control.ac_mode = (uint8_t) ConditioningMode::HEALTHY_DRY;
 		ac_full_state.control.fan_mode = (uint8_t) FanMode::FAN_MID;
@@ -157,13 +164,14 @@ int main(int argc, char** argv) {
 		else {
 			HAIER_LOGW("AC control not OK");
 		}
+		TEST_END(0, 0);
 	}
 	std::this_thread::sleep_for(std::chrono::milliseconds(500));
 #endif
 #if defined(RUN_ALL_TESTS) || defined(RUN_TEST8)
 	{
 		// Sending status request without answer, first time we will get warning
-		HAIER_LOGI("Test #8");
+		TEST_START(8);
 		const haier_protocol::HaierMessage status_request_message(haier_protocol::FrameType::CONTROL, (uint16_t)SubcommandsControl::GET_USER_DATA);
 		hon_client.send_message_without_answer(status_request_message, true);
 		CLIENT_SERVER_LOOP();
@@ -171,17 +179,8 @@ int main(int argc, char** argv) {
 		// Sending another status request. Should be no warning this time
 		hon_client.send_message_without_answer(status_request_message, true);
 		CLIENT_SERVER_LOOP();
+		TEST_END(1, 0);
 	}
 #endif
-	unsigned int warn = get_warnings_count();
-	unsigned int  errors = get_errors_count();
-	constexpr int expected_warnings = 0 +
-#if defined(RUN_ALL_TESTS) || defined(RUN_TEST8)
-		1 +
-#endif
-		0;
-
-	std::cout << "Test results, warning: " << warn << ", expected: " << expected_warnings << ", errors: " << errors << std::endl;
-	if ((warn != expected_warnings) || (errors != 0))
-		exit(1);
+	HAIER_LOGI("All tests successfully finished!");
 }

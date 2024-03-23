@@ -77,34 +77,6 @@ size_t TransportLevelHandler::read_data()
   return size1 + size2;
 }
 
-#if 0
-size_t TransportLevelHandler::read_data()
-{
-  size_t bytes_read = 0;
-  uint8_t val;
-  size_t count = this->stream_.available();
-#if (HAIER_LOG_LEVEL > 4)
-  std::unique_ptr<uint8_t[]> out_buf(new uint8_t[count]);
-#endif
-  while ((bytes_read < count) && (this->stream_.read_array(&val, 1) > 0))
-  {
-#if (HAIER_LOG_LEVEL > 4)
-    out_buf[bytes_read] = val;
-#endif
-    if (this->buffer_.push(val) == 0)
-      break;
-    bytes_read++;
-  }
-#if (HAIER_LOG_LEVEL > 4)
-  if (bytes_read > 0)
-  {
-    HAIER_BUFV("Received data:", out_buf.get(), bytes_read);
-  }
-#endif
-  return bytes_read;
-}
-#endif
-
 void TransportLevelHandler::process_data()
 {
   if (this->current_frame_.get_status() > FrameStatus::FRAME_EMPTY)
