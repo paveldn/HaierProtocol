@@ -58,7 +58,7 @@ void console_logger(haier_protocol::HaierLogLevel level, const char* tag, const 
     attron(COLOR_PAIR((short)level));
     printw("%s\n", msg_buffer);
 #else
-    const char* ll2color[] =
+    const std::string ll2color[] =
     {
       "\033[0m",    // llNone
       "\033[91m",   // llError

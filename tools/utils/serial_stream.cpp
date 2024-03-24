@@ -71,12 +71,15 @@ SerialStream::SerialStream(const std::string& port_path) : buffer_(SERIAL_BUFFER
 }
 
 SerialStream::~SerialStream() {
-    if (is_valid())
+  if (is_valid()) {
 #if _WIN32
-        CloseHandle(handle_);
+    CloseHandle(handle_);
+    handle_ = INVALID_HANDLE_VALUE;
 #else
-  close(handle_);
+    close(handle_);
+    handle_ = -1;
 #endif
+  }
 }
 
 bool SerialStream::is_valid() const {

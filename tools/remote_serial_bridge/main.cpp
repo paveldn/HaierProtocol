@@ -1,18 +1,12 @@
-﻿#define WIN32_LEAN_AND_MEAN
-#include <windows.h>
-#include <winsock2.h>
-#include <ws2tcpip.h>
-#include <stdlib.h>
-#include <stdio.h>
+﻿#include <ws2tcpip.h>
 #include <iostream>
 #include "console_log.h"
+#include "serial_stream.h"
 #include <conio.h>
 #include <thread>
 
-
 #pragma comment (lib, "Ws2_32.lib")
-#pragma comment (lib, "Mswsock.lib")
-#pragma comment (lib, "AdvApi32.lib")
+
 bool app_exiting{ false };
 
 #define SERIAL_BUFFER_SIZE 2048
@@ -71,34 +65,6 @@ void close_socket(SOCKET srv_socket) {
   WSACleanup();
 }
 
-HANDLE open_serial(char* port_name) {
-  HANDLE handle_ = CreateFile(std::string("\\\\.\\").append(port_name).c_str(), GENERIC_READ | GENERIC_WRITE, 0, 0, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, 0);
-  DCB serialParams = { 0 };
-  serialParams.DCBlength = sizeof(serialParams);
-  GetCommState(handle_, &serialParams);
-  serialParams.BaudRate = 9600;
-  serialParams.ByteSize = 8;
-  serialParams.StopBits = 1;
-  serialParams.fBinary = 1;
-  serialParams.fRtsControl = 0;
-  serialParams.fDtrControl = 0;
-  serialParams.XonLim = 2048;
-  serialParams.XoffLim = 512;
-  serialParams.Parity = 0;
-  serialParams.XonChar = 17;
-  serialParams.XoffChar = 19;
-  serialParams.EofChar = 26;
-  SetCommState(handle_, &serialParams);
-  COMMTIMEOUTS timeout = { 0 };
-  timeout.ReadIntervalTimeout = MAXDWORD;
-  timeout.ReadTotalTimeoutConstant = 0;
-  timeout.ReadTotalTimeoutMultiplier = 0;
-  timeout.WriteTotalTimeoutConstant = 2;
-  timeout.WriteTotalTimeoutMultiplier = 0;
-  SetCommTimeouts(handle_, &timeout);
-  return handle_;
-}
-
 int main(int argc, char** argv) {
   haier_protocol::set_log_handler(console_logger);
   if (argc == 3) {
@@ -110,7 +76,18 @@ int main(int argc, char** argv) {
       return 1;
     }
     HAIER_LOGI("Opening port %s", argv[1]);
-    HANDLE handle_ = open_serial(argv[1]);
+    haier_protocol::set_log_handler(console_logger);
+    std::string port_path;
+#if _WIN32
+    port_path = std::string("\\\\.\\").append(argv[1]);
+#else
+    port_path = argv[1];
+#endif
+    SerialStream serial_stream(port_path.c_str());
+    if (!serial_stream.is_valid()) {
+      std::cout << "Can't open port " << argv[1] << std::endl;
+      return 1;
+    }
     int res;
     while (!app_exiting) {
       if (kbhit()) {
@@ -118,15 +95,15 @@ int main(int argc, char** argv) {
         if (ch == 27)
           app_exiting = true;
       } else {
-        unsigned long size;
-        int status = ReadFile(handle_, serial_buffer, SERIAL_BUFFER_SIZE, &size, nullptr);
-        if ((status != 0) && (size > 0)) {
+        unsigned long size = serial_stream.available();
+        size = serial_stream.read_array(serial_buffer, size);
+
+        if (size > 0) {
           HAIER_BUFD("SERIAL>>", serial_buffer, size);
           res = send(remote_socket, (char*) serial_buffer, size, 0);
           if (res == SOCKET_ERROR) {
             HAIER_LOGE("send failed with error: %d", WSAGetLastError());
             close_socket(remote_socket);
-            CloseHandle(handle_);
             return 1;
           }
         }
@@ -136,18 +113,16 @@ int main(int argc, char** argv) {
           res = recv(remote_socket, (char*)socket_buffer, SOCKET_BUFFER_SIZE, 0);
           if (res > 0) {
             HAIER_BUFD("SOCKET>>", socket_buffer, res);
-            WriteFile(handle_, socket_buffer, res, nullptr, nullptr);
+            serial_stream.write_array(socket_buffer, res);
           } else if (res < 0) {
             HAIER_LOGE("recv failed with error: %d", WSAGetLastError());
             close_socket(remote_socket);
-            CloseHandle(handle_);
             return 1;
           }
         }
-        Sleep(10);
+        std::this_thread::sleep_for(std::chrono::milliseconds(10));
       }
     }
-    CloseHandle(handle_);
     close_socket(remote_socket);
   } else {
     std::cout << "Please use: " << argv[0] << " <remote_port> <local_port>" << std::endl;
