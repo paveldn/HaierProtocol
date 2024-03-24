@@ -5,7 +5,8 @@
 #include <iostream>
 #if _WIN32
 #include <conio.h>
-#else
+#endif
+#ifdef USE_CURSES
 #include <curses.h>
 #endif
 
@@ -62,7 +63,7 @@ void simulator_main(const char* app_name, const char* port_name, message_handler
 #if _WIN32
   SetConsoleTitle(std::string(app_name).append(", port=").append(port_name).append(". Press ESC to exit").c_str());
 #endif
-#if __linux__
+#ifdef USE_CURSES
   initscr();
   start_color();
   cbreak();
@@ -89,7 +90,7 @@ void simulator_main(const char* app_name, const char* port_name, message_handler
     std::this_thread::sleep_for(std::chrono::milliseconds(10));
   }
   protocol_thread.join();
-#if __linux__
+#ifdef USE_CURSES
   echo();
   endwin();
 #endif

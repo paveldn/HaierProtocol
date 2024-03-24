@@ -98,15 +98,15 @@ size_t SerialStream::available() noexcept {
 #if _WIN32
         status = ReadFile(handle_, tmp_buf, SERIAL_BUFFER_SIZE, &size, nullptr);
 #else
-  status = read(handle_, tmp_buf, SERIAL_BUFFER_SIZE);
-  if (status >= 0) {
-      size = status;
-      status = 1;
-  }
-  else {
-      status = 0;
-      size = 0;
-  }
+        status = read(handle_, tmp_buf, SERIAL_BUFFER_SIZE);
+        if (status >= 0) {
+            size = status;
+            status = 1;
+        }
+        else {
+            status = 0;
+            size = 0;
+        }
 #endif
         if ((status != 0) && (size > 0))
             buffer_.push(tmp_buf, size);

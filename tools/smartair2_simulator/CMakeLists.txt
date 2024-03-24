@@ -11,6 +11,7 @@ add_compile_options(-DHAIER_LOG_LEVEL=5)
 if (UNIX)
     find_package(Curses REQUIRED)
     include_directories(${CURSES_INCLUDE_DIR})
+    add_compile_options(-DUSE_CURSES)
 endif (UNIX)
 
 include_directories("${LIB_ROOT}/include")

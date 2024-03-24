@@ -3,7 +3,8 @@
 #include <cstdarg>
 #if _WIN32
 #include <windows.h>
-#else
+#endif
+#ifdef USE_CURSES
 #include <curses.h>
 #endif
 #include "console_log.h"
@@ -53,7 +54,10 @@ void console_logger(haier_protocol::HaierLogLevel level, const char* tag, const 
     va_start(args, format);
     vsnprintf(msg_buffer + len, BUFFER_SIZE - len - 1, format, args);
     va_end(args);
-#if _WIN32
+#ifdef USE_CURSES
+    attron(COLOR_PAIR((short)level));
+    printw("%s\n", msg_buffer);
+#else
     const char* ll2color[] =
     {
       "\033[0m",    // llNone
@@ -65,6 +69,8 @@ void console_logger(haier_protocol::HaierLogLevel level, const char* tag, const 
       "\033[90m",   // llVerbose
     };
     std::cout << ll2color[(uint8_t)level] << msg_buffer << "\033[0m" << std::endl;
+#endif
+#if _WIN32
     // DebugView++ message sending
     HWND debugviewpp_window = FindWindowA(NULL, "[Capture Win32 & Global Win32 Messages] - DebugView++");
     if (debugviewpp_window == NULL)
@@ -73,8 +79,5 @@ void console_logger(haier_protocol::HaierLogLevel level, const char* tag, const 
       static unsigned long process_id = GetCurrentProcessId();
       SendMessageA(debugviewpp_window, EM_REPLACESEL, process_id, (LPARAM)msg_buffer);
     }
-#else
-    attron(COLOR_PAIR((short) level));
-    printw("%s\n", msg_buffer);
 #endif
 }
