@@ -31,7 +31,7 @@ void preloop(haier_protocol::ProtocolHandler* handler) {
   }
 }
 
-void main(int argc, char** argv) {
+int main(int argc, char** argv) {
   if (argc == 2) {
     message_handlers mhandlers;
     mhandlers[haier_protocol::FrameType::GET_DEVICE_VERSION] = unsupported_message_handler;

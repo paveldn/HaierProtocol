@@ -1,12 +1,14 @@
 ﻿#include <iostream>
 #include <chrono>
 #include <cstdarg>
-#ifdef _WIN32
+#if _WIN32
 #include <windows.h>
+#else
+#include <curses.h>
 #endif
 #include "console_log.h"
 
-#define BUFFER_SIZE	4096
+#define BUFFER_SIZE 4096
 
 // Test counters
 unsigned int warnings_counter{ 0 };
@@ -23,16 +25,6 @@ unsigned int get_errors_count() {
 
 void console_logger(haier_protocol::HaierLogLevel level, const char* tag, const char* format, ...)
 {
-    const std::string  ll2color[] =
-    {
-      "\033[0m",    // llNone
-      "\033[91m",   // llError
-      "\033[93m",   // llWarning
-      "\033[32m",   // llInfo
-      "\033[0m",    // not used
-      "\033[37m",   // llDebug
-      "\033[90m",   // llVerbose
-    };
     constexpr char ll2tag[] =
     {
         '#',        // llNone
@@ -42,7 +34,6 @@ void console_logger(haier_protocol::HaierLogLevel level, const char* tag, const 
         '#',        // not used
         'D',        // llDebug
         'V',        // llVerbose
-
     };
     static char msg_buffer[BUFFER_SIZE];
     if (level == haier_protocol::HaierLogLevel::LEVEL_NONE)
@@ -62,8 +53,18 @@ void console_logger(haier_protocol::HaierLogLevel level, const char* tag, const 
     va_start(args, format);
     vsnprintf(msg_buffer + len, BUFFER_SIZE - len - 1, format, args);
     va_end(args);
+#if _WIN32
+    const char* ll2color[] =
+    {
+      "\033[0m",    // llNone
+      "\033[91m",   // llError
+      "\033[93m",   // llWarning
+      "\033[32m",   // llInfo
+      "\033[0m",    // not used
+      "\033[37m",   // llDebug
+      "\033[90m",   // llVerbose
+    };
     std::cout << ll2color[(uint8_t)level] << msg_buffer << "\033[0m" << std::endl;
-#ifdef _WIN32
     // DebugView++ message sending
     HWND debugviewpp_window = FindWindowA(NULL, "[Capture Win32 & Global Win32 Messages] - DebugView++");
     if (debugviewpp_window == NULL)
@@ -72,5 +73,8 @@ void console_logger(haier_protocol::HaierLogLevel level, const char* tag, const 
       static unsigned long process_id = GetCurrentProcessId();
       SendMessageA(debugviewpp_window, EM_REPLACESEL, process_id, (LPARAM)msg_buffer);
     }
+#else
+    attron(COLOR_PAIR((short) level));
+    printw("%s\n", msg_buffer);
 #endif
 }

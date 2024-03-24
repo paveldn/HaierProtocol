@@ -8,6 +8,11 @@ set(LIB_ROOT "${CMAKE_CURRENT_SOURCE_DIR}/../..")
 
 add_compile_options(-DHAIER_LOG_LEVEL=5)
 
+if (UNIX)
+    find_package(Curses REQUIRED)
+    include_directories(${CURSES_INCLUDE_DIR})
+endif (UNIX)
+
 include_directories("${LIB_ROOT}/include")
 include_directories("${CMAKE_CURRENT_SOURCE_DIR}/../utils")
 
@@ -23,3 +28,8 @@ list(APPEND SOURCE_FILES "${CMAKE_CURRENT_SOURCE_DIR}/../utils/simulator_base.cp
 list(APPEND SOURCE_FILES "${CMAKE_CURRENT_SOURCE_DIR}/main.cpp")
 
 add_executable("${TEST_NAME}" "${SOURCE_FILES}")
+
+if (UNIX)
+    target_link_libraries(${TEST_NAME} ${CURSES_LIBRARY})
+endif (UNIX)
+

@@ -1,6 +1,14 @@
 #include "serial_stream.h"
+#include <iostream>
+
+#if __linux__
+#include <fcntl.h>
+#include <termios.h>
+#include <unistd.h>
+#endif
 
 SerialStream::SerialStream(const std::string& port_path) : buffer_(SERIAL_BUFFER_SIZE) {
+#if _WIN32
     handle_ = CreateFile(port_path.c_str(), GENERIC_READ | GENERIC_WRITE, 0, 0, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, 0);
     if (is_valid()) {
         DCB serialParams = { 0 };
@@ -26,12 +34,58 @@ SerialStream::SerialStream(const std::string& port_path) : buffer_(SERIAL_BUFFER
         timeout.WriteTotalTimeoutMultiplier = 0;
         SetCommTimeouts(handle_, &timeout);
     }
+#else
+    std::cout<< port_path.c_str() << std::endl;
+    handle_ = open(port_path.c_str(), O_RDWR | O_NOCTTY );
+    if (is_valid()) {
+      struct termios tty;
+      if (tcgetattr(handle_, &tty) != 0) {
+        handle_ = -1;
+        return;
+      }
+      tty.c_cflag &= ~PARENB;
+      tty.c_cflag &= ~CSTOPB;
+      tty.c_cflag &= ~CSIZE;
+      tty.c_cflag |= CS8;
+      tty.c_cflag &= ~CRTSCTS;
+      tty.c_cflag |= CREAD | CLOCAL;
+      tty.c_lflag &= ~ICANON;
+      tty.c_lflag &= ~ECHO;
+      tty.c_lflag &= ~ECHOE;
+      tty.c_lflag &= ~ECHONL;
+      tty.c_lflag &= ~ISIG;
+      tty.c_iflag &= ~(IXON | IXOFF | IXANY);
+      tty.c_iflag &= ~(IGNBRK | BRKINT | PARMRK | ISTRIP | INLCR | IGNCR | ICRNL);
+      tty.c_oflag &= ~OPOST;
+      tty.c_oflag &= ~ONLCR;
+      tty.c_cc[VTIME] = 0;
+      tty.c_cc[VMIN] = 0;
+      cfsetispeed(&tty, B9600);
+      cfsetospeed(&tty, B9600);
+      if (tcsetattr(handle_, TCSANOW, &tty) != 0) {
+      handle_ = -1;
+      return;
+      }
+    }
+#endif
 }
 
 SerialStream::~SerialStream() {
     if (is_valid())
+#if _WIN32
         CloseHandle(handle_);
+#else
+  close(handle_);
+#endif
 }
+
+bool SerialStream::is_valid() const {
+#if _WIN32
+  return handle_ != INVALID_HANDLE_VALUE;
+#else
+  return handle_ >= 0;
+#endif
+};
 
 size_t SerialStream::available() noexcept {
     if (!is_valid())
@@ -40,7 +94,20 @@ size_t SerialStream::available() noexcept {
     {
         static uint8_t tmp_buf[SERIAL_BUFFER_SIZE];
         unsigned long size;
-        int status = ReadFile(handle_, tmp_buf, SERIAL_BUFFER_SIZE, &size, nullptr);
+        int status;
+#if _WIN32
+        status = ReadFile(handle_, tmp_buf, SERIAL_BUFFER_SIZE, &size, nullptr);
+#else
+  status = read(handle_, tmp_buf, SERIAL_BUFFER_SIZE);
+  if (status >= 0) {
+      size = status;
+      status = 1;
+  }
+  else {
+      status = 0;
+      size = 0;
+  }
+#endif
         if ((status != 0) && (size > 0))
             buffer_.push(tmp_buf, size);
         else
@@ -59,6 +126,10 @@ size_t SerialStream::read_array(uint8_t* data, size_t len) noexcept {
 void SerialStream::write_array(const uint8_t* data, size_t len) noexcept {
     if (!is_valid())
         return;
+#if _WIN32
     WriteFile(handle_, data, len, nullptr, nullptr);
+#else
+    write(handle_, data, len);
+#endif
 }
 

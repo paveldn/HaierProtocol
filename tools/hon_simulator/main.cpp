@@ -77,7 +77,7 @@ void preloop(haier_protocol::ProtocolHandler* handler) {
   process_alarms(handler);
 }
 
-void main(int argc, char** argv) {
+int main(int argc, char** argv) {
   if (argc == 2) {
     std::srand(std::time(nullptr));
     message_handlers mhandlers;
@@ -101,7 +101,6 @@ void main(int argc, char** argv) {
     khandlers['s'] = []() { _reset_alarm = true; };
     simulator_main("hOn HVAC simulator", argv[1], mhandlers, ahandlers, khandlers, preloop);
   }
-
   else {
     std::cout << "Please use: hon_simulator <port>" << std::endl;
   }
