@@ -77,13 +77,7 @@ int main(int argc, char** argv) {
     }
     HAIER_LOGI("Opening port %s", argv[1]);
     haier_protocol::set_log_handler(console_logger);
-    std::string port_path;
-#if _WIN32
-    port_path = std::string("\\\\.\\").append(argv[1]);
-#else
-    port_path = argv[1];
-#endif
-    SerialStream serial_stream(port_path.c_str());
+    SerialStream serial_stream(argv[1]);
     if (!serial_stream.is_valid()) {
       std::cout << "Can't open port " << argv[1] << std::endl;
       return 1;

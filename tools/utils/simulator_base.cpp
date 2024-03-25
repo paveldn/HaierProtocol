@@ -42,13 +42,7 @@ void simulator_main(const char* app_name, const char* port_name, message_handler
 
 void simulator_main(const char* app_name, const char* port_name, message_handlers mhandlers, answer_handlers ahandlers, keyboard_handlers khandlers, protocol_preloop ploop) {
   haier_protocol::set_log_handler(console_logger);
-  std::string port_path;
-#if _WIN32
-  port_path = std::string("\\\\.\\").append(port_name);
-#else
-  port_path = port_name;
-#endif
-  SerialStream serial_stream(port_path.c_str());
+  SerialStream serial_stream(port_name);
   if (!serial_stream.is_valid()) {
     std::cout << "Can't open port " << port_name << std::endl;
     return;

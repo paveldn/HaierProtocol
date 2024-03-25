@@ -9,7 +9,11 @@
 
 SerialStream::SerialStream(const std::string& port_path) : buffer_(SERIAL_BUFFER_SIZE) {
 #if _WIN32
-    handle_ = CreateFile(port_path.c_str(), GENERIC_READ | GENERIC_WRITE, 0, 0, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, 0);
+    constexpr char win_prefix[] = "\\\\.\\";
+    std::string port_win = port_path;
+    if (port_win.rfind(win_prefix, 0) != 0)
+        port_win = std::string(win_prefix).append(port_win);
+    handle_ = CreateFile(port_win.c_str(), GENERIC_READ | GENERIC_WRITE, 0, 0, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, 0);
     if (is_valid()) {
         DCB serialParams = { 0 };
         serialParams.DCBlength = sizeof(serialParams);
@@ -63,8 +67,8 @@ SerialStream::SerialStream(const std::string& port_path) : buffer_(SERIAL_BUFFER
       cfsetispeed(&tty, B9600);
       cfsetospeed(&tty, B9600);
       if (tcsetattr(handle_, TCSANOW, &tty) != 0) {
-      handle_ = -1;
-      return;
+        handle_ = -1;
+        return;
       }
     }
 #endif
