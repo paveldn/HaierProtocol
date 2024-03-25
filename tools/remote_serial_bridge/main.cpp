@@ -1,11 +1,12 @@
-﻿#include <ws2tcpip.h>
+﻿#if _WIN32
+#define WIN32_LEAN_AND_MEAN
+#include <ws2tcpip.h>
+#include <conio.h>
+#endif
 #include <iostream>
+#include <thread>
 #include "console_log.h"
 #include "serial_stream.h"
-#include <conio.h>
-#include <thread>
-
-#pragma comment (lib, "Ws2_32.lib")
 
 bool app_exiting{ false };
 
@@ -15,9 +16,18 @@ bool app_exiting{ false };
 static uint8_t serial_buffer[SERIAL_BUFFER_SIZE];
 static uint8_t socket_buffer[SOCKET_BUFFER_SIZE];
 
-SOCKET open_socket(char* addr, char* port) {
+#if _WIN32
+  using TcpSocket = SOCKET;
+#else
+  using TcpSocket = int;
+#define INVALID_SOCKET (-1)
+#define SOCKET_ERROR (-1)
+#endif
+
+#if _WIN32
+TcpSocket open_socket(char* addr, char* port) {
   WSADATA wsaData;
-  SOCKET socket_res = INVALID_SOCKET;
+  TcpSocket socket_res = INVALID_SOCKET;
   struct addrinfo* result = NULL,
     * ptr = NULL,
     hints;
@@ -38,7 +48,7 @@ SOCKET open_socket(char* addr, char* port) {
     return INVALID_SOCKET;
   }
   for (ptr = result; ptr != NULL; ptr = ptr->ai_next) {
-    // Create a SOCKET for connecting to server
+    // Create a TcpSocket for connecting to server
     socket_res = socket(ptr->ai_family, ptr->ai_socktype,
       ptr->ai_protocol);
     if (socket_res == INVALID_SOCKET) {
@@ -59,17 +69,58 @@ SOCKET open_socket(char* addr, char* port) {
   return socket_res;
 }
 
-void close_socket(SOCKET srv_socket) {
-  if (srv_socket != INVALID_SOCKET)
-    closesocket(srv_socket);
+void close_socket(TcpSocket& socket) {
+  if (socket != INVALID_SOCKET)
+    closesocket(socket);
   WSACleanup();
 }
+
+int read_socket(TcpSocket& socket, uint8_t *buffer, size_t buffer_size) {
+  unsigned long size;
+  ioctlsocket(socket, FIONREAD, &size);
+  if (size > 0) {
+    int res = recv(socket, (char*)socket_buffer, SOCKET_BUFFER_SIZE, 0);
+    if (res > 0)
+      return res;
+  }
+  return 0;
+}
+
+int write_socket(TcpSocket& socket, uint8_t* buffer, size_t buffer_size) {
+  return send(socket, (char*)buffer, buffer_size, 0);
+}
+
+int get_last_error() {
+  return WSAGetLastError();
+}
+
+#else
+TcpSocket open_socket(char* addr, char* port) {
+  return -1;
+}
+
+void close_socket(TcpSocket srv_socket) {
+}
+
+int read_socket(TcpSocket& socket, uint8_t* buffer, size_t buffer_size) {
+  return 0;
+}
+
+int write_socket(TcpSocket& socket, uint8_t* buffer, size_t buffer_size) {
+  return 0;
+}
+
+int get_last_error() {
+  return 0;
+}
+
+#endif
 
 int main(int argc, char** argv) {
   haier_protocol::set_log_handler(console_logger);
   if (argc == 3) {
     HAIER_LOGI("Opening socket");
-    SOCKET remote_socket = open_socket(argv[2], "8888");
+    TcpSocket remote_socket = open_socket(argv[2], "8888");
     if (remote_socket == INVALID_SOCKET) {
       HAIER_LOGE("Failed to connect to server %s", argv[2]);
       close_socket(remote_socket);
@@ -84,35 +135,33 @@ int main(int argc, char** argv) {
     }
     int res;
     while (!app_exiting) {
+#if _WIN32      
       if (kbhit()) {
         char ch = getch();
         if (ch == 27)
           app_exiting = true;
-      } else {
+      } else 
+#endif 
+      {
         unsigned long size = serial_stream.available();
         size = serial_stream.read_array(serial_buffer, size);
-
         if (size > 0) {
           HAIER_BUFD("SERIAL>>", serial_buffer, size);
-          res = send(remote_socket, (char*) serial_buffer, size, 0);
-          if (res == SOCKET_ERROR) {
-            HAIER_LOGE("send failed with error: %d", WSAGetLastError());
+          res = write_socket(remote_socket, serial_buffer, size);
+          if (res < 0) {
+            HAIER_LOGE("send failed with error: %d", get_last_error());
             close_socket(remote_socket);
             return 1;
           }
         }
-        unsigned long l;
-        ioctlsocket(remote_socket, FIONREAD, &l);
-        if (l > 0) {
-          res = recv(remote_socket, (char*)socket_buffer, SOCKET_BUFFER_SIZE, 0);
-          if (res > 0) {
-            HAIER_BUFD("SOCKET>>", socket_buffer, res);
-            serial_stream.write_array(socket_buffer, res);
-          } else if (res < 0) {
-            HAIER_LOGE("recv failed with error: %d", WSAGetLastError());
-            close_socket(remote_socket);
-            return 1;
-          }
+        res = read_socket(remote_socket, socket_buffer, SOCKET_BUFFER_SIZE);
+        if (res > 0) {
+          HAIER_BUFD("SOCKET>>", socket_buffer, res);
+          serial_stream.write_array(socket_buffer, res);
+        } else if (res < 0) {
+          HAIER_LOGE("recv failed with error: %d", get_last_error());
+          close_socket(remote_socket);
+          return 1;
         }
         std::this_thread::sleep_for(std::chrono::milliseconds(10));
       }

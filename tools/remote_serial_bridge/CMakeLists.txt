@@ -17,4 +17,8 @@ list(APPEND SOURCE_FILES "${CMAKE_CURRENT_SOURCE_DIR}/main.cpp")
 list(APPEND SOURCE_FILES "${CMAKE_CURRENT_SOURCE_DIR}/../utils/console_log.cpp")
 list(APPEND SOURCE_FILES "${CMAKE_CURRENT_SOURCE_DIR}/../utils/serial_stream.cpp")
 
-add_executable("${APP_NAME}" "${SOURCE_FILES}")
+add_executable(${APP_NAME} "${SOURCE_FILES}")
+
+if(WIN32)
+  target_link_libraries(${APP_NAME} ws2_32)
+endif()
