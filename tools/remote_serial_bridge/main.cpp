@@ -1,6 +1,15 @@
 ﻿#if _WIN32
 #define WIN32_LEAN_AND_MEAN
 #include <ws2tcpip.h>
+#else
+#include <cstring>
+//#include <stdlib.h>
+//#include <string.h>
+#include <unistd.h>
+//#include <sys/types.h> 
+#include <sys/socket.h>
+//#include <netinet/in.h>
+#include <netdb.h> 
 #endif
 #include <iostream>
 #include <thread>
@@ -19,12 +28,12 @@ static uint8_t socket_buffer[SOCKET_BUFFER_SIZE];
   using TcpSocket = SOCKET;
 #else
   using TcpSocket = int;
-#define INVALID_SOCKET (-1)
-#define SOCKET_ERROR (-1)
+  constexpr int INVALID_SOCKET=-1;
+  constexpr int SOCKET_ERROR=-1;
 #endif
 
 #if _WIN32
-TcpSocket open_socket(char* addr, char* port) {
+TcpSocket open_socket(char* addr, unsigned int port) {
   WSADATA wsaData;
   TcpSocket socket_res = INVALID_SOCKET;
   struct addrinfo* result = NULL,
@@ -40,7 +49,7 @@ TcpSocket open_socket(char* addr, char* port) {
   hints.ai_socktype = SOCK_STREAM;
   hints.ai_protocol = IPPROTO_TCP;
   // Resolve the server address and port
-  res = getaddrinfo(addr, port, &hints, &result);
+  res = getaddrinfo(addr, std::to_string(port).c_str(), &hints, &result);
   if (res != 0) {
     HAIER_LOGE("getaddrinfo failed with error: %d", res);
     WSACleanup();
@@ -94,19 +103,33 @@ int get_last_error() {
 }
 
 #else
-TcpSocket open_socket(char* addr, char* port) {
-  return -1;
+TcpSocket open_socket(char* addr, unsigned int port) {
+  int sockfd = socket(AF_INET, SOCK_STREAM, 0);
+  if (sockfd < 0)
+    return INVALID_SOCKET;
+  struct hostent *server;
+  server = gethostbyname(addr);
+  if (server == NULL)
+    return INVALID_SOCKET;
+  struct sockaddr_in server_addr;
+  server_addr.sin_family = AF_INET;
+  server_addr.sin_port = htons(port);
+  memcpy(&server_addr.sin_addr.s_addr, server->h_addr, server->h_length);
+  if (connect(sockfd, (struct sockaddr *) &server_addr, sizeof(server_addr)) < 0) 
+    return INVALID_SOCKET;
+  return sockfd;
 }
 
 void close_socket(TcpSocket srv_socket) {
+  close(srv_socket);
 }
 
 int read_socket(TcpSocket& socket, uint8_t* buffer, size_t buffer_size) {
-  return 0;
+  return read(socket, buffer, buffer_size);
 }
 
 int write_socket(TcpSocket& socket, uint8_t* buffer, size_t buffer_size) {
-  return 0;
+  return write(socket, buffer, buffer_size);
 }
 
 int get_last_error() {
@@ -119,7 +142,7 @@ int main(int argc, char** argv) {
   haier_protocol::set_log_handler(console_logger);
   if (argc == 3) {
     HAIER_LOGI("Opening socket");
-    TcpSocket remote_socket = open_socket(argv[2], "8888");
+    TcpSocket remote_socket = open_socket(argv[2], 8888);
     if (remote_socket == INVALID_SOCKET) {
       HAIER_LOGE("Failed to connect to server %s", argv[2]);
       close_socket(remote_socket);
