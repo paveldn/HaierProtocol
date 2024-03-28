@@ -3,9 +3,11 @@
 #include <cstdarg>
 #if _WIN32
 #include <windows.h>
+#include <conio.h>
 #endif
-#ifdef USE_CURSES
+#if USE_CURSES
 #include <curses.h>
+#include <thread>
 #endif
 #include "console_log.h"
 
@@ -23,6 +25,57 @@ unsigned int get_errors_count() {
     return errors_counter;
 }
 
+#if USE_CURSES
+void init_console() {
+  initscr();
+  start_color();
+  cbreak();
+  noecho();
+  nodelay(stdscr, TRUE);
+  scrollok(stdscr, TRUE);
+  init_pair(1, COLOR_RED, COLOR_BLACK);
+  init_pair(2, COLOR_YELLOW, COLOR_BLACK);
+  init_pair(3, COLOR_GREEN, COLOR_BLACK);
+  init_pair(5, COLOR_MAGENTA, COLOR_BLACK);
+  init_pair(6, COLOR_WHITE, COLOR_BLACK);
+}
+
+void exit_console() {
+  refresh();
+#if PRESS_KEY_TO_CLOSE_CONSOLE  
+  HAIER_LOGI("Press any key to close console");
+  while (get_kb_hit() == NO_KB_HIT)
+    std::this_thread::sleep_for(std::chrono::milliseconds(10));
+#endif    
+  echo();
+  endwin();
+}
+
+class __CONSOLE_GUARD__ {
+public:
+    __CONSOLE_GUARD__() {
+        init_console();
+    }
+    ~__CONSOLE_GUARD__() {
+        exit_console();
+    }
+};
+
+__CONSOLE_GUARD__ __GUARD__;
+#endif
+
+int get_kb_hit() {
+  int result = NO_KB_HIT;
+#if _WIN32
+  if (kbhit())
+    result = getch();
+#elif USE_CURSES
+  int ch = getch();
+  if (ch != ERR)
+    result = ch;
+#endif
+  return result;
+}
 
 void console_logger(haier_protocol::HaierLogLevel level, const char* tag, const char* format, ...)
 {
@@ -54,7 +107,7 @@ void console_logger(haier_protocol::HaierLogLevel level, const char* tag, const 
     va_start(args, format);
     vsnprintf(msg_buffer + len, BUFFER_SIZE - len - 1, format, args);
     va_end(args);
-#ifdef USE_CURSES
+#if USE_CURSES
     attron(COLOR_PAIR((short)level));
     printw("%s\n", msg_buffer);
 #else

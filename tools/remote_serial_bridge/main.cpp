@@ -1,7 +1,6 @@
 ﻿#if _WIN32
 #define WIN32_LEAN_AND_MEAN
 #include <ws2tcpip.h>
-#include <conio.h>
 #endif
 #include <iostream>
 #include <thread>
@@ -130,19 +129,16 @@ int main(int argc, char** argv) {
     haier_protocol::set_log_handler(console_logger);
     SerialStream serial_stream(argv[1]);
     if (!serial_stream.is_valid()) {
-      std::cout << "Can't open port " << argv[1] << std::endl;
+      HAIER_LOGE("Can't open port %s", argv[1]);
       return 1;
     }
     int res;
     while (!app_exiting) {
-#if _WIN32      
-      if (kbhit()) {
-        char ch = getch();
-        if (ch == 27)
+      int kb = get_kb_hit();
+      if (kb != NO_KB_HIT) {
+        if (kb == 27)
           app_exiting = true;
-      } else 
-#endif 
-      {
+      } else {
         unsigned long size = serial_stream.available();
         size = serial_stream.read_array(serial_buffer, size);
         if (size > 0) {
@@ -168,6 +164,6 @@ int main(int argc, char** argv) {
     }
     close_socket(remote_socket);
   } else {
-    std::cout << "Please use: " << argv[0] << " <remote_port> <local_port>" << std::endl;
+    HAIER_LOGE("Please use: %s <remote_port> <local_port>", argv[0]);
   }
 }

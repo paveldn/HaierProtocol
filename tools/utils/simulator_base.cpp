@@ -3,12 +3,6 @@
 #include "serial_stream.h"
 #include <thread>
 #include <iostream>
-#if _WIN32
-#include <conio.h>
-#endif
-#ifdef USE_CURSES
-#include <curses.h>
-#endif
 
 bool app_exiting{ false };
 int last_key_pressed{ 0 };
@@ -19,21 +13,6 @@ void protocol_loop(haier_protocol::ProtocolHandler* handler, protocol_preloop pl
     handler->loop();
     std::this_thread::sleep_for(std::chrono::milliseconds(3));
   }
-}
-
-constexpr int NO_KB_HIT = -1;
-
-int get_kb_hit() {
-  int result = NO_KB_HIT;
-#if _WIN32
-  if (kbhit())
-    result = getch();
-#else
-  int ch = getch();
-  if (ch != ERR)
-    result = ch;
-#endif
-  return result;
 }
 
 void simulator_main(const char* app_name, const char* port_name, message_handlers mhandlers, keyboard_handlers khandlers, protocol_preloop ploop) {
@@ -57,18 +36,10 @@ void simulator_main(const char* app_name, const char* port_name, message_handler
 #if _WIN32
   SetConsoleTitle(std::string(app_name).append(", port=").append(port_name).append(". Press ESC to exit").c_str());
 #endif
-#ifdef USE_CURSES
-  initscr();
-  start_color();
-  cbreak();
-  noecho();
-  nodelay(stdscr, TRUE);
-  scrollok(stdscr, TRUE);
-  init_pair(1, COLOR_RED, COLOR_BLACK);
-  init_pair(2, COLOR_YELLOW, COLOR_BLACK);
-  init_pair(3, COLOR_GREEN, COLOR_BLACK);
-  init_pair(5, COLOR_MAGENTA, COLOR_BLACK);
-  init_pair(6, COLOR_WHITE, COLOR_BLACK);
+#if _WIN32 || USE_CURSES
+  HAIER_LOGI("Starting %s application. Press ESC to exit", app_name);
+#else
+  HAIER_LOGI("Starting %s application. Press Ctrl+C to exit", app_name);
 #endif
   while (!app_exiting) {
     int kb = get_kb_hit();
@@ -84,8 +55,4 @@ void simulator_main(const char* app_name, const char* port_name, message_handler
     std::this_thread::sleep_for(std::chrono::milliseconds(10));
   }
   protocol_thread.join();
-#ifdef USE_CURSES
-  echo();
-  endwin();
-#endif
 }

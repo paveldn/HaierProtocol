@@ -39,7 +39,6 @@ SerialStream::SerialStream(const std::string& port_path) : buffer_(SERIAL_BUFFER
         SetCommTimeouts(handle_, &timeout);
     }
 #else
-    std::cout<< port_path.c_str() << std::endl;
     handle_ = open(port_path.c_str(), O_RDWR | O_NOCTTY );
     if (is_valid()) {
       struct termios tty;
