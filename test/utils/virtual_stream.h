@@ -1,6 +1,6 @@
 #ifndef VIRTUAL_STREAM
 #define VIRTUAL_STREAM
-#include <cstdint>
+#include <stdint.h>
 #include <cstddef>
 #include "utils/protocol_stream.h"
 #include "utils/circular_buffer.h"
