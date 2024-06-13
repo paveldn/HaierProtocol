@@ -1,7 +1,7 @@
 #ifndef HAIER_PROTOCOL_H
 #define HAIER_PROTOCOL_H
 
-#include <cstdint>
+#include <stdint.h>
 #include <chrono>
 #include <functional>
 #include <map>

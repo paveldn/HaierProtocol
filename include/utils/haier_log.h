@@ -3,6 +3,7 @@
 
 #include <functional>
 #include <string>
+#include <stdint.h> 
 
 extern const char hex_map[];
 

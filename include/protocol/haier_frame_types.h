@@ -1,6 +1,8 @@
 #ifndef HAIER_FRAME_TYPES_H
 #define HAIER_FRAME_TYPES_H
 
+#include <stdint.h>
+
 namespace haier_protocol
 {
 

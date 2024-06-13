@@ -1,6 +1,6 @@
 ﻿#pragma once
 
-#include <cstdint>
+#include <stdint.h>
 
 namespace esphome {
 namespace haier {

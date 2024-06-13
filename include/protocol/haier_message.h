@@ -1,7 +1,7 @@
 #ifndef HAIER_MESSAGE_H
 #define HAIER_MESSAGE_H
 
-#include <cstdint>
+#include <stdint.h>
 #include "haier_frame_types.h"
 
 namespace haier_protocol
