@@ -4,16 +4,18 @@
 #include "protocol/haier_protocol.h"
 #include "hon_packet.h"
 
+constexpr size_t SENSORS_SPARE_SIZE = 4;
+
 struct HvacFullStatus {
   esphome::haier::hon_protocol::HaierPacketControl control;
   esphome::haier::hon_protocol::HaierPacketSensors sensors;
-  uint8_t spare[4];
+  uint8_t spare[SENSORS_SPARE_SIZE];
   esphome::haier::hon_protocol::HaierPacketBigData big_data;
 };
 
 constexpr size_t ALARM_BUF_SIZE = 8;
 
-constexpr size_t USER_DATA_SIZE = sizeof(esphome::haier::hon_protocol::HaierPacketControl) + sizeof(esphome::haier::hon_protocol::HaierPacketSensors);
+constexpr size_t USER_DATA_SIZE = sizeof(esphome::haier::hon_protocol::HaierPacketControl) + sizeof(esphome::haier::hon_protocol::HaierPacketSensors) + SENSORS_SPARE_SIZE;
 
 constexpr size_t BIG_DATA_SIZE = sizeof(HvacFullStatus);
 
