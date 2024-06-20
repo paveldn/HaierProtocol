@@ -47,3 +47,31 @@ Where:
  * **Frame data** - n byte, data of the frame, can be empty. Sometimes first 2 bytes of data are used as a subcommand. Max size 246
  * **Checksum** - 1 byte, the least significant byte of the sum of all bytes of the frame except separator bytes, CRC, and checksum itself.
  * **CRC** - 2 bytes, CRC 16 of all bytes of the frame except separator bytes and CRC itself (Modbus CRC algorithm used). CRC is available only if the frame flags byte indicates it.
+
+Setup / usage
+--------------------
+
+Prerequisites
+-----------
+* Windows (no support for compilation on other OSes as of now)
+* CMake https://cmake.org/download/
+* Visual Studio Code or another way to compile C++
+
+Running the application
+-----------
+
+1. Use CMake to generate the necessary files
+```
+mkdir build && cd build
+cmake ..
+cd ..
+```
+
+2. Build
+```
+cmake --build build --config Debug --target all
+```
+
+3. Run
+?
+
