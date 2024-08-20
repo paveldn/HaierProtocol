@@ -46,4 +46,4 @@ Where:
  * **Frame type** - 1 byte, type of frame (depend on the protocol)
  * **Frame data** - n byte, data of the frame, can be empty. Sometimes first 2 bytes of data are used as a subcommand. Max size 246
  * **Checksum** - 1 byte, the least significant byte of the sum of all bytes of the frame except separator bytes, CRC, and checksum itself.
- * **CRC** - 2 bytes, CRC 16 of all bytes of the frame except separator bytes and CRC itself (Modbus CRC algorithm used). CRC is available only if the frame flags byte indicates it.
+ * **CRC** - 2 bytes, CRC 16 of all bytes of the frame except separator bytes, checksum byte, and CRC itself (`CRC-16/ARC <https://crccalc.com/?crc=&method=CRC-16/ARC&datatype=1&outtype=0>`_ algorithm used). CRC is available only if the frame flags byte indicates it.
