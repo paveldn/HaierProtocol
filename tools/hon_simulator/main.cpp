@@ -97,6 +97,14 @@ int main(int argc, char** argv) {
       ac_state.control.self_cleaning_status = false;
       ac_state.control.steri_clean = false; 
     };
+    khandlers['4'] = []() {
+      ac_state.control.quiet_mode = 1 - ac_state.control.quiet_mode;
+      HAIER_LOGI("Quiet mode is %s", ac_state.control.quiet_mode  == 1 ? "On" : "Off");
+    };
+    khandlers['5'] = []() {
+      ac_state.control.health_mode = 1 - ac_state.control.health_mode;
+      HAIER_LOGI("Health mode is %s", ac_state.control.health_mode == 1 ? "On" : "Off");
+    };
     khandlers['a'] = []() { _trigger_random_alarm = true; };
     khandlers['s'] = []() { _reset_alarm = true; };
     simulator_main("hOn HVAC simulator", argv[1], mhandlers, ahandlers, khandlers, preloop);
