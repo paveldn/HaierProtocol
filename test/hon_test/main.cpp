@@ -13,7 +13,7 @@
 
 using namespace esphome::haier::hon_protocol;
 
-HvacFullStatus ac_full_state;
+HvacFullStatus& ac_full_state = get_ac_state_ref();
 
 haier_protocol::FrameType expected_answers[][2] = {
 	{haier_protocol::FrameType::GET_DEVICE_VERSION, haier_protocol::FrameType::GET_DEVICE_VERSION_RESPONSE},
@@ -81,7 +81,6 @@ int main(int argc, char** argv) {
 	hon_server.set_message_handler(haier_protocol::FrameType::GET_MANAGEMENT_INFORMATION, std::bind(get_management_information_handler, &hon_server, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
 	hon_server.set_message_handler(haier_protocol::FrameType::REPORT_NETWORK_STATUS, std::bind(report_network_status_handler, &hon_server, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
 	haier_protocol::ProtocolHandler hon_client(client_stream);
-	ac_full_state = get_ac_state_ref();
 	hon_client.set_default_answer_handler(client_answers_handler);
 	hon_client.set_message_handler(haier_protocol::FrameType::STATUS, std::bind(get_status_message_handler, &hon_client, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
 #if defined(RUN_ALL_TESTS) || defined(RUN_TEST1)

@@ -1,11 +1,20 @@
 ﻿#include <cstring>
 #include "hon_server.h"
 #include "hon_packet.h"
+#include "simulator_base.h"
 
 using namespace esphome::haier::hon_protocol;
 
+uint8_t message_buffer[TOTAL_PACKET_SIZE];
+
 const uint8_t double_zero_bytes[]{ 0x00, 0x00 };
-HvacFullStatus ac_status;
+
+HvacFullStatus ac_status{
+  (esphome::haier::hon_protocol::HaierPacketControl&) message_buffer[CONF_STATUS_MESSAGE_HEADER_SIZE],
+  (esphome::haier::hon_protocol::HaierPacketSensors&) message_buffer[CONF_STATUS_MESSAGE_HEADER_SIZE + CONF_CONTROL_PACKET_SIZE],
+  (esphome::haier::hon_protocol::HaierPacketBigData&) message_buffer[CONF_STATUS_MESSAGE_HEADER_SIZE + CONF_CONTROL_PACKET_SIZE + CONF_SENSORS_PACKET_SIZE]
+};
+
 bool config_mode{ false };
 const haier_protocol::HaierMessage INVALID_MSG(haier_protocol::FrameType::INVALID, double_zero_bytes, 2);
 const haier_protocol::HaierMessage CONFIRM_MSG(haier_protocol::FrameType::CONFIRM);
@@ -27,7 +36,6 @@ bool has_active_alarms() {
 }
 
 void init_ac_state(HvacFullStatus& state) {
-  memset(&state, 0, sizeof(HvacFullStatus));
   state.control.set_point = 25 - 16;
   state.control.vertical_swing_mode = (uint8_t)VerticalSwingMode::AUTO;
   state.control.fan_mode = (uint8_t)FanMode::FAN_AUTO;
@@ -119,7 +127,12 @@ void process_alarms(haier_protocol::ProtocolHandler* protocol_handler)
 HvacFullStatus& get_ac_state_ref() {
   static bool _first_run = true;
   if (_first_run) {
+    BUILD_BUG_ON(CONF_STATUS_MESSAGE_HEADER_SIZE < 0);
+    BUILD_BUG_ON(CONF_CONTROL_PACKET_SIZE < sizeof(esphome::haier::hon_protocol::HaierPacketControl));
+    BUILD_BUG_ON(CONF_SENSORS_PACKET_SIZE < sizeof(esphome::haier::hon_protocol::HaierPacketSensors));
+    BUILD_BUG_ON(CONF_BIG_DATA_PACKET_SIZE < sizeof(esphome::haier::hon_protocol::HaierPacketBigData));
     _first_run = false;
+    memset(&message_buffer, 0, TOTAL_PACKET_SIZE);
     init_ac_state(ac_status);
   }
   return ac_status;

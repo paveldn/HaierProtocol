@@ -4,6 +4,8 @@
 #include <unordered_map>
 #include "protocol/haier_protocol.h"
 
+#define BUILD_BUG_ON(condition) ((void)sizeof(char[1 - 2*!!(condition)]))
+
 using message_handlers = std::unordered_map<haier_protocol::FrameType, std::function<haier_protocol::HandlerError(haier_protocol::ProtocolHandler*, haier_protocol::FrameType, const uint8_t*, size_t)>>;
 using answer_handlers = std::unordered_map<haier_protocol::FrameType, std::function<haier_protocol::HandlerError(haier_protocol::ProtocolHandler*, haier_protocol::FrameType, haier_protocol::FrameType, const uint8_t*, size_t)>>;
 using keyboard_handlers = std::unordered_map<char, std::function<void()>>;
