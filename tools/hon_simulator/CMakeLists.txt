@@ -8,6 +8,8 @@ set(LIB_ROOT "${CMAKE_CURRENT_SOURCE_DIR}/../..")
 
 add_executable("${TEST_NAME}")
 
+add_subdirectory(${LIB_ROOT} "${CMAKE_CURRENT_BINARY_DIR}/HaierProtocol")
+
 target_compile_options("${TEST_NAME}" PRIVATE  -DHAIER_LOG_LEVEL=5)
 
 if (UNIX)
@@ -28,15 +30,12 @@ target_include_directories("${TEST_NAME}" PRIVATE
 )
 
 target_sources("${TEST_NAME}" PRIVATE
-    "${LIB_ROOT}/src/protocol/haier_message.cpp"
-    "${LIB_ROOT}/src/protocol/haier_protocol.cpp"
-    "${LIB_ROOT}/src/transport/haier_frame.cpp"
-    "${LIB_ROOT}/src/transport/protocol_transport.cpp"
-    "${LIB_ROOT}/src/utils/haier_log.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/../utils/console_log.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/../utils/serial_stream.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/../utils/hon_server.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/../utils/simulator_base.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/main.cpp"
 )
+
+target_link_libraries("${TEST_NAME}" HaierProtocol)
 

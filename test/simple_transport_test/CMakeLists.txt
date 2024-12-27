@@ -13,12 +13,11 @@ add_compile_options(-DRUN_ALL_TESTS)
 
 include_directories("${LIB_ROOT}/include" "${CMAKE_CURRENT_SOURCE_DIR}/../utils" "${TOOLS_PATH}/utils")
 
-list(APPEND SOURCE_FILES "${LIB_ROOT}/src/protocol/haier_message.cpp")
-list(APPEND SOURCE_FILES "${LIB_ROOT}/src/protocol/haier_protocol.cpp")
-list(APPEND SOURCE_FILES "${LIB_ROOT}/src/transport/haier_frame.cpp")
-list(APPEND SOURCE_FILES "${LIB_ROOT}/src/transport/protocol_transport.cpp")
-list(APPEND SOURCE_FILES "${LIB_ROOT}/src/utils/haier_log.cpp")
 list(APPEND SOURCE_FILES "${TOOLS_PATH}/utils/console_log.cpp")
 list(APPEND SOURCE_FILES "${CMAKE_CURRENT_SOURCE_DIR}/test.cpp")
 
 add_executable("${TEST_NAME}" "${SOURCE_FILES}")
+
+add_subdirectory(${LIB_ROOT} "${CMAKE_CURRENT_BINARY_DIR}/HaierProtocol")
+
+target_link_libraries("${TEST_NAME}" HaierProtocol)

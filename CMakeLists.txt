@@ -10,12 +10,22 @@ project(${LIB_NAME} VERSION ${LIB_VERSION}
                     DESCRIPTION ${LIB_DESCRIPTION}
                     HOMEPAGE_URL ${LIB_URL})
 
-include_directories("${CMAKE_CURRENT_SOURCE_DIR}/include")
+set(LIB_INCLUDE_FOLDER "${CMAKE_CURRENT_SOURCE_DIR}/include")
+set(LIB_SRC_FOLDER "${CMAKE_CURRENT_SOURCE_DIR}/src")
 
-list(APPEND SOURCE_FILES "${CMAKE_CURRENT_SOURCE_DIR}/src/protocol/haier_message.cpp")
-list(APPEND SOURCE_FILES "${CMAKE_CURRENT_SOURCE_DIR}/src/protocol/haier_protocol.cpp")
-list(APPEND SOURCE_FILES "${CMAKE_CURRENT_SOURCE_DIR}/src/transport/haier_frame.cpp")
-list(APPEND SOURCE_FILES "${CMAKE_CURRENT_SOURCE_DIR}/src/transport/protocol_transport.cpp")
-list(APPEND SOURCE_FILES "${CMAKE_CURRENT_SOURCE_DIR}/src/utils/haier_log.cpp")
+include_directories("${LIB_INCLUDE_FOLDER}")
 
-add_library("${LIB_NAME}" STATIC "${SOURCE_FILES}")
+list(APPEND LIB_FOLDERS "protocol" "transport" "utils")
+
+foreach (LIB_FOLDER ${LIB_FOLDERS})
+	file(GLOB FILES_INC "${LIB_INCLUDE_FOLDER}/${LIB_FOLDER}/*.h")
+	file(GLOB FILES_SRC "${LIB_SRC_FOLDER}/${LIB_FOLDER}/*.cpp")
+	list(APPEND SOURCE_FILES ${FILES_SRC})
+	list(APPEND INCLUDE_FILES ${FILES_INC})
+	source_group("${LIB_FOLDER}" FILES ${FILES_SRC} ${FILES_INC})
+endforeach()
+
+add_library("${LIB_NAME}" STATIC ${SOURCE_FILES} ${INCLUDE_FILES})
+
+
+
