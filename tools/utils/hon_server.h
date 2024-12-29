@@ -21,10 +21,10 @@
 #define CONF_BIG_DATA_PACKET_SIZE (sizeof(esphome::haier::hon_protocol::HaierPacketBigData))
 #endif
 
-struct HvacFullStatus {
-  esphome::haier::hon_protocol::HaierPacketControl& control;
-  esphome::haier::hon_protocol::HaierPacketSensors& sensors;
-  esphome::haier::hon_protocol::HaierPacketBigData& big_data;
+struct HvacState {
+  esphome::haier::hon_protocol::HaierPacketControl control;
+  esphome::haier::hon_protocol::HaierPacketSensors sensors;
+  esphome::haier::hon_protocol::HaierPacketBigData big_data;
 };
 
 constexpr size_t ALARM_BUF_SIZE = 8;
@@ -34,6 +34,42 @@ constexpr size_t USER_DATA_SIZE = (CONF_CONTROL_PACKET_SIZE + CONF_SENSORS_PACKE
 constexpr size_t BIG_DATA_SIZE = CONF_BIG_DATA_PACKET_SIZE;
 
 constexpr size_t TOTAL_PACKET_SIZE = CONF_STATUS_MESSAGE_HEADER_SIZE + CONF_CONTROL_PACKET_SIZE + CONF_SENSORS_PACKET_SIZE + CONF_BIG_DATA_PACKET_SIZE;
+
+struct HonProtocolSettings {
+  uint8_t status_message_header_size;
+  uint8_t control_packet_size;
+  uint8_t sensors_packet_size;
+  uint8_t big_data_packet_size;
+  bool encription;    // Not supported yet
+  bool crc;
+  HonProtocolSettings() :
+    status_message_header_size(0),
+    control_packet_size(sizeof(esphome::haier::hon_protocol::HaierPacketControl)),
+    sensors_packet_size(sizeof(esphome::haier::hon_protocol::HaierPacketSensors) + 4),
+    big_data_packet_size(sizeof(esphome::haier::hon_protocol::HaierPacketBigData)),
+    encription(false),
+    crc(true)
+  {}
+  uint8_t get_total_status_data_size() { return status_message_header_size + control_packet_size + sensors_packet_size + big_data_packet_size; };
+};
+
+class HonServer {
+public:
+  HonServer() = delete;
+  HonServer(haier_protocol::ProtocolStream&);
+  HonServer(haier_protocol::ProtocolStream&, HonProtocolSettings);
+  ~HonServer();
+  bool is_in_configuration_mode() const;
+  bool start_alarm(uint8_t alarm_id);
+  void reset_alarms();
+  const uint8_t* get_status_message_buffer() const;
+  HvacState gety_ac_state() const;
+  const HonProtocolSettings& get_protocol_settings() const;
+private:
+  HonProtocolSettings protocol_settings_;
+  haier_protocol::ProtocolHandler* protocol_handler_;
+  uint8_t* status_message_buffer_;
+};
 
 void process_alarms(haier_protocol::ProtocolHandler* protocol_handler);
 

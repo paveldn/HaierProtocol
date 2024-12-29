@@ -6,6 +6,18 @@
 
 using namespace esphome::haier::hon_protocol;
 
+HonServer::HonServer(haier_protocol::ProtocolStream& stream, HonProtocolSettings settings) {
+  this->protocol_handler_ = new haier_protocol::ProtocolHandler(stream);
+
+  this->protocol_handler_->set_message_handler(haier_protocol::FrameType::GET_DEVICE_VERSION, std::bind(get_device_version_handler, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
+  this->protocol_handler_->set_message_handler(haier_protocol::FrameType::GET_DEVICE_ID, std::bind(get_device_id_handler, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
+  this->protocol_handler_->set_message_handler(haier_protocol::FrameType::CONTROL, std::bind(status_request_handler, this, ac_full_state, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
+  this->protocol_handler_->set_message_handler(haier_protocol::FrameType::GET_ALARM_STATUS, std::bind(alarm_status_handler, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
+}
+
+HonServer::~HonServer() {
+  delete this->protocol_handler_;
+}
 const uint8_t double_zero_bytes[]{ 0x00, 0x00 };
 
 bool config_mode{ false };
