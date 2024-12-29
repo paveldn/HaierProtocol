@@ -37,7 +37,7 @@ constexpr size_t TOTAL_PACKET_SIZE = CONF_STATUS_MESSAGE_HEADER_SIZE + CONF_CONT
 
 void process_alarms(haier_protocol::ProtocolHandler* protocol_handler);
 
-HvacFullStatus& get_ac_state_ref();
+HvacFullStatus init_ac_state(uint8_t* buffer, size_t buffer_size);
 
 bool start_alarm(uint8_t alarm_id);
 
@@ -49,16 +49,16 @@ haier_protocol::HandlerError get_device_version_handler(haier_protocol::Protocol
 
 haier_protocol::HandlerError get_device_id_handler(haier_protocol::ProtocolHandler* protocol_handler, haier_protocol::FrameType type, const uint8_t* buffer, size_t size);
 
-haier_protocol::HandlerError status_request_handler(haier_protocol::ProtocolHandler* protocol_handler, haier_protocol::FrameType type, const uint8_t* buffer, size_t size);
+haier_protocol::HandlerError status_request_handler(haier_protocol::ProtocolHandler* protocol_handler, HvacFullStatus& ac_state, haier_protocol::FrameType type, const uint8_t* buffer, size_t size);
 
 haier_protocol::HandlerError alarm_status_handler(haier_protocol::ProtocolHandler* protocol_handler, haier_protocol::FrameType type, const uint8_t* buffer, size_t size);
 
 haier_protocol::HandlerError get_management_information_handler(haier_protocol::ProtocolHandler* protocol_handler, haier_protocol::FrameType type, const uint8_t* buffer, size_t size);
 
-haier_protocol::HandlerError report_network_status_handler(haier_protocol::ProtocolHandler* protocol_handler, haier_protocol::FrameType type, const uint8_t* buffer, size_t size);
+haier_protocol::HandlerError report_network_status_handler(haier_protocol::ProtocolHandler* protocol_handler, HvacFullStatus& ac_state, haier_protocol::FrameType type, const uint8_t* buffer, size_t size);
 
 haier_protocol::HandlerError stop_alarm_handler(haier_protocol::ProtocolHandler* protocol_handler, haier_protocol::FrameType type, const uint8_t* buffer, size_t size);
 
-haier_protocol::HandlerError process_single_parameter(haier_protocol::ProtocolHandler* protocol_handler, uint8_t parameter, uint16_t value);
+haier_protocol::HandlerError process_single_parameter(haier_protocol::ProtocolHandler* protocol_handler, HvacFullStatus& ac_state, uint8_t parameter, uint16_t value);
 
 haier_protocol::HandlerError alarm_status_report_answer_handler(haier_protocol::ProtocolHandler* protocol_handler, haier_protocol::FrameType request_type, haier_protocol::FrameType message_type, const uint8_t* data, size_t data_size);
