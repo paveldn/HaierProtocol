@@ -13,10 +13,6 @@
 
 using namespace esphome::haier::hon_protocol;
 
-uint8_t ac_state_buffer[TOTAL_PACKET_SIZE];
-
-HvacFullStatus ac_full_state = init_ac_state(ac_state_buffer, TOTAL_PACKET_SIZE);
-
 haier_protocol::FrameType expected_answers[][2] = {
 	{haier_protocol::FrameType::GET_DEVICE_VERSION, haier_protocol::FrameType::GET_DEVICE_VERSION_RESPONSE},
 	{haier_protocol::FrameType::GET_DEVICE_ID, haier_protocol::FrameType::GET_DEVICE_ID_RESPONSE},
@@ -75,13 +71,7 @@ int main(int argc, char** argv) {
 	haier_protocol::set_log_handler(console_logger);
 	VirtualStream& server_stream = stream_holder.get_stream_reference(StreamDirection::DIRECTION_A);
 	VirtualStream& client_stream = stream_holder.get_stream_reference(StreamDirection::DIRECTION_B);
-	haier_protocol::ProtocolHandler hon_server(server_stream);
-	hon_server.set_message_handler(haier_protocol::FrameType::GET_DEVICE_VERSION, std::bind(get_device_version_handler, &hon_server, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
-	hon_server.set_message_handler(haier_protocol::FrameType::GET_DEVICE_ID, std::bind(get_device_id_handler, &hon_server, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
-	hon_server.set_message_handler(haier_protocol::FrameType::CONTROL, std::bind(status_request_handler, &hon_server, ac_full_state, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
-	hon_server.set_message_handler(haier_protocol::FrameType::GET_ALARM_STATUS, std::bind(alarm_status_handler, &hon_server, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
-	hon_server.set_message_handler(haier_protocol::FrameType::GET_MANAGEMENT_INFORMATION, std::bind(get_management_information_handler, &hon_server, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
-	hon_server.set_message_handler(haier_protocol::FrameType::REPORT_NETWORK_STATUS, std::bind(report_network_status_handler, &hon_server, ac_full_state, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
+	HonServer hon_server(server_stream);
 	haier_protocol::ProtocolHandler hon_client(client_stream);
 	hon_client.set_default_answer_handler(client_answers_handler);
 	hon_client.set_message_handler(haier_protocol::FrameType::STATUS, std::bind(get_status_message_handler, &hon_client, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
@@ -150,19 +140,18 @@ int main(int argc, char** argv) {
 #if defined(RUN_ALL_TESTS) || defined(RUN_TEST7)
 	{
 		TEST_START(7);
-		ac_full_state.control.ac_power = true;
-		ac_full_state.control.ac_mode = (uint8_t) ConditioningMode::HEALTHY_DRY;
-		ac_full_state.control.fan_mode = (uint8_t) FanMode::FAN_MID;
-		ac_full_state.control.horizontal_swing_mode = (uint8_t)HorizontalSwingMode::MAX_LEFT;
-		ac_full_state.control.vertical_swing_mode = (uint8_t)VerticalSwingMode::HEALTH_DOWN;
-		ac_full_state.control.display_status = 0;
-		uint8_t temp_state_buf[TOTAL_PACKET_SIZE];
-		memcpy(temp_state_buf, ac_state_buffer, TOTAL_PACKET_SIZE); // Saving state that was sent
-		haier_protocol::HaierMessage control_message(haier_protocol::FrameType::CONTROL, (uint16_t)SubcommandsControl::SET_GROUP_PARAMETERS, (uint8_t*)&ac_full_state.control, sizeof(HaierPacketControl));
+		HvacState ac_state_before(hon_server.get_ac_state());
+		ac_state_before.control.ac_power = true;
+		ac_state_before.control.ac_mode = (uint8_t) ConditioningMode::HEALTHY_DRY;
+		ac_state_before.control.fan_mode = (uint8_t) FanMode::FAN_MID;
+		ac_state_before.control.horizontal_swing_mode = (uint8_t)HorizontalSwingMode::MAX_LEFT;
+		ac_state_before.control.vertical_swing_mode = (uint8_t)VerticalSwingMode::HEALTH_DOWN;
+		ac_state_before.control.display_status = 0;
+		haier_protocol::HaierMessage control_message(haier_protocol::FrameType::CONTROL, (uint16_t)SubcommandsControl::SET_GROUP_PARAMETERS, (uint8_t*)&ac_state_before.control, sizeof(HaierPacketControl));
 		hon_client.send_message(control_message, true);
 		CLIENT_SERVER_LOOP();
-		// Checking if state was applied
-		if (memcmp(temp_state_buf, ac_state_buffer, TOTAL_PACKET_SIZE) == 0) {
+		HvacState ac_state_after(hon_server.get_ac_state());
+		if (memcmp((void*) & ac_state_before.control, (void*) & ac_state_after.control, sizeof(HaierPacketControl)) == 0) {
 			HAIER_LOGI("AC control processed correctly");
 		}
 		else {

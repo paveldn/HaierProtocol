@@ -6,7 +6,6 @@
 #include <string>
 
 using namespace esphome::haier::hon_protocol;
-HvacFullStatus& ac_state = get_ac_state_ref();
 
 enum class PiringMode {
   NONE = 0,

@@ -6,160 +6,177 @@
 
 using namespace esphome::haier::hon_protocol;
 
-HonServer::HonServer(haier_protocol::ProtocolStream& stream, HonProtocolSettings settings) {
-  this->protocol_handler_ = new haier_protocol::ProtocolHandler(stream);
-
-  this->protocol_handler_->set_message_handler(haier_protocol::FrameType::GET_DEVICE_VERSION, std::bind(get_device_version_handler, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
-  this->protocol_handler_->set_message_handler(haier_protocol::FrameType::GET_DEVICE_ID, std::bind(get_device_id_handler, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
-  this->protocol_handler_->set_message_handler(haier_protocol::FrameType::CONTROL, std::bind(status_request_handler, this, ac_full_state, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
-  this->protocol_handler_->set_message_handler(haier_protocol::FrameType::GET_ALARM_STATUS, std::bind(alarm_status_handler, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
-}
-
-HonServer::~HonServer() {
-  delete this->protocol_handler_;
-}
 const uint8_t double_zero_bytes[]{ 0x00, 0x00 };
 
-bool config_mode{ false };
 const haier_protocol::HaierMessage INVALID_MSG(haier_protocol::FrameType::INVALID, double_zero_bytes, 2);
 const haier_protocol::HaierMessage CONFIRM_MSG(haier_protocol::FrameType::CONFIRM);
-uint8_t alarm_status_buf[ALARM_BUF_SIZE] = { 0x00 }; // Alarm mask (no alarms)
-
-uint8_t communication_status{ 0xFF };
-std::chrono::steady_clock::time_point last_alarm_message;
-bool alarm_paused;
-bool alarm_stopped;
 
 constexpr size_t SHORT_ALARM_REPORT_INTERVAL_MS = 300;
 constexpr size_t LONG_ALARM_REPORT_INTERVAL_MS = 5000;
 
-bool has_active_alarms() {
+HonServer::HonServer(haier_protocol::ProtocolStream& stream, HonProtocolSettings settings) : 
+    protocol_settings_(settings),
+	status_message_buffer_size_(settings.get_total_status_data_size()),
+	status_message_buffer_(new uint8_t[status_message_buffer_size_]),
+	protocol_handler_(new haier_protocol::ProtocolHandler(stream)) 
+{
+	assert(settings.control_packet_size >= sizeof(esphome::haier::hon_protocol::HaierPacketControl));
+	assert(settings.sensors_packet_size >= sizeof(esphome::haier::hon_protocol::HaierPacketSensors));
+	assert(settings.big_data_packet_size >= sizeof(esphome::haier::hon_protocol::HaierPacketBigData));
+	this->init_ac_state_internal_();
+    this->register_handlers_();
+}
+
+HonServer::HonServer(haier_protocol::ProtocolStream& stream) : HonServer(stream, HonProtocolSettings()) {
+}
+
+HonServer::~HonServer() {
+    delete this->protocol_handler_;
+}
+
+void HonServer::register_handlers_() {
+    this->protocol_handler_->set_message_handler(haier_protocol::FrameType::GET_DEVICE_VERSION, std::bind(&HonServer::get_device_version_handler_, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
+    this->protocol_handler_->set_message_handler(haier_protocol::FrameType::GET_DEVICE_ID, std::bind(&HonServer::get_device_id_handler_, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
+    this->protocol_handler_->set_message_handler(haier_protocol::FrameType::CONTROL, std::bind(&HonServer::status_request_handler_, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
+    this->protocol_handler_->set_message_handler(haier_protocol::FrameType::GET_ALARM_STATUS, std::bind(&HonServer::alarm_status_handler_, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
+	this->protocol_handler_->set_message_handler(haier_protocol::FrameType::GET_MANAGEMENT_INFORMATION, std::bind(&HonServer::get_management_information_handler_, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
+	this->protocol_handler_->set_message_handler(haier_protocol::FrameType::REPORT_NETWORK_STATUS, std::bind(&HonServer::report_network_status_handler_, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
+}
+
+void HonServer::init_ac_state_internal_() {
+    memset(this->status_message_buffer_, 0, this->status_message_buffer_size_);
+    this->control_packet_ = (esphome::haier::hon_protocol::HaierPacketControl*)&this->status_message_buffer_[this->protocol_settings_.status_message_header_size];
+    this->sensors_packet_ = (esphome::haier::hon_protocol::HaierPacketSensors*)&this->status_message_buffer_[this->protocol_settings_.status_message_header_size + this->protocol_settings_.control_packet_size];
+    this->big_data_packet_ = (esphome::haier::hon_protocol::HaierPacketBigData*)&this->status_message_buffer_[this->protocol_settings_.status_message_header_size + this->protocol_settings_.control_packet_size + this->protocol_settings_.sensors_packet_size];
+    memset(this->alarm_status_buf_, 0, ALARM_BUF_SIZE); // No alarms
+    this->control_packet_->set_point = 25 - 16;
+    this->control_packet_->vertical_swing_mode = (uint8_t)VerticalSwingMode::AUTO;
+    this->control_packet_->fan_mode = (uint8_t)FanMode::FAN_AUTO;
+    this->control_packet_->special_mode = (uint8_t)SpecialMode::NONE;
+    this->control_packet_->ac_mode = (uint8_t)ConditioningMode::AUTO;
+    this->control_packet_->ten_degree = 0;
+    this->control_packet_->display_status = 1;
+    this->control_packet_->half_degree = 0;
+    this->control_packet_->intelligence_status = 0;
+    this->control_packet_->pmv_status = 0;
+    this->control_packet_->use_fahrenheit = 0;
+    this->control_packet_->ac_power = 0;
+    this->control_packet_->health_mode = 0;
+    this->control_packet_->electric_heating_status = 0;
+    this->control_packet_->fast_mode = 0;
+    this->control_packet_->quiet_mode = 0;
+    this->control_packet_->sleep_mode = 0;
+    this->control_packet_->lock_remote = 0;
+    this->control_packet_->beeper_status = 0;
+    this->control_packet_->target_humidity = 0;
+    this->control_packet_->horizontal_swing_mode = (uint8_t)HorizontalSwingMode::AUTO;
+    this->control_packet_->human_sensing_status = 0;
+    this->control_packet_->change_filter = 0;
+    this->control_packet_->fresh_air_status = 0;
+    this->control_packet_->humidification_status = 0;
+    this->control_packet_->pm2p5_cleaning_status = 0;
+    this->control_packet_->ch2o_cleaning_status = 0;
+    this->control_packet_->self_cleaning_status = 0;
+    this->control_packet_->light_status = 1;
+    this->control_packet_->energy_saving_status = 0;
+    this->control_packet_->cleaning_time_status = 0;
+    this->sensors_packet_->room_temperature = 18 * 2;
+    this->sensors_packet_->room_humidity = 0;
+    this->sensors_packet_->outdoor_temperature = 10 + 64;
+    this->sensors_packet_->pm2p5_level = 0;
+    this->sensors_packet_->air_quality = 0;
+    this->sensors_packet_->human_sensing = 0;
+    this->sensors_packet_->ac_type = 0;
+    this->sensors_packet_->error_status = 0;
+    this->sensors_packet_->operation_source = 3;
+    this->sensors_packet_->operation_mode_hk = 0;
+    this->sensors_packet_->err_confirmation = 0;
+    this->sensors_packet_->total_cleaning_time = 0;
+    this->sensors_packet_->indoor_pm2p5_value = 0;
+    this->sensors_packet_->outdoor_pm2p5_value = 0;
+    this->sensors_packet_->ch2o_value = 0;
+    this->sensors_packet_->voc_value = 0;
+    this->sensors_packet_->co2_value = 0;
+    this->big_data_packet_->power[0] = 0;
+    this->big_data_packet_->power[0] = 0;
+    this->big_data_packet_->indoor_coil_temperature = this->sensors_packet_->room_temperature + 40;
+    this->big_data_packet_->outdoor_out_air_temperature = this->sensors_packet_->outdoor_temperature;
+    this->big_data_packet_->outdoor_coil_temperature = this->sensors_packet_->outdoor_temperature;
+    this->big_data_packet_->outdoor_in_air_temperature = this->sensors_packet_->outdoor_temperature;
+    this->big_data_packet_->outdoor_defrost_temperature = this->sensors_packet_->outdoor_temperature;
+    this->big_data_packet_->compressor_frequency = 0;
+    this->big_data_packet_->compressor_current[0] = 0;
+    this->big_data_packet_->compressor_current[1] = 0;
+    this->big_data_packet_->outdoor_fan_status = 0;
+    this->big_data_packet_->defrost_status = 0;
+    this->big_data_packet_->compressor_status = 0;
+    this->big_data_packet_->indoor_fan_status = 0;
+    this->big_data_packet_->four_way_valve_status = 0;
+    this->big_data_packet_->indoor_electric_heating_status = 0;
+    this->big_data_packet_->expansion_valve_open_degree[0] = 0;
+    this->big_data_packet_->expansion_valve_open_degree[1] = 0;
+    this->last_alarm_message_ = std::chrono::steady_clock::now();
+    this->alarm_paused_ = false;
+    this->alarm_stopped_ = true;
+}
+
+
+bool HonServer::has_active_alarms() const{
   for (int i = 0; i < ALARM_BUF_SIZE; i++)
-    if (alarm_status_buf[i] != 0)
+    if (this->alarm_status_buf_[i] != 0)
       return true;
   return false;
 }
 
-void init_ac_state_internal(HvacFullStatus& state) {
-  state.control.set_point = 25 - 16;
-  state.control.vertical_swing_mode = (uint8_t)VerticalSwingMode::AUTO;
-  state.control.fan_mode = (uint8_t)FanMode::FAN_AUTO;
-  state.control.special_mode = (uint8_t)SpecialMode::NONE;
-  state.control.ac_mode = (uint8_t)ConditioningMode::AUTO;
-  state.control.ten_degree = 0;
-  state.control.display_status = 1;
-  state.control.half_degree = 0;
-  state.control.intelligence_status = 0;
-  state.control.pmv_status = 0;
-  state.control.use_fahrenheit = 0;
-  state.control.ac_power = 0;
-  state.control.health_mode = 0;
-  state.control.electric_heating_status = 0;
-  state.control.fast_mode = 0;
-  state.control.quiet_mode = 0;
-  state.control.sleep_mode = 0;
-  state.control.lock_remote = 0;
-  state.control.beeper_status = 0;
-  state.control.target_humidity = 0;
-  state.control.horizontal_swing_mode = (uint8_t)HorizontalSwingMode::AUTO;
-  state.control.human_sensing_status = 0;
-  state.control.change_filter = 0;
-  state.control.fresh_air_status = 0;
-  state.control.humidification_status = 0;
-  state.control.pm2p5_cleaning_status = 0;
-  state.control.ch2o_cleaning_status = 0;
-  state.control.self_cleaning_status = 0;
-  state.control.light_status = 1;
-  state.control.energy_saving_status = 0;
-  state.control.cleaning_time_status = 0;
-  state.sensors.room_temperature = 18 * 2;
-  state.sensors.room_humidity = 0;
-  state.sensors.outdoor_temperature = 10 + 64;
-  state.sensors.pm2p5_level = 0;
-  state.sensors.air_quality = 0;
-  state.sensors.human_sensing = 0;
-  state.sensors.ac_type = 0;
-  state.sensors.error_status = 0;
-  state.sensors.operation_source = 3;
-  state.sensors.operation_mode_hk = 0;
-  state.sensors.err_confirmation = 0;
-  state.sensors.total_cleaning_time = 0;
-  state.sensors.indoor_pm2p5_value = 0;
-  state.sensors.outdoor_pm2p5_value = 0;
-  state.sensors.ch2o_value = 0;
-  state.sensors.voc_value = 0;
-  state.sensors.co2_value = 0;
-  state.big_data.power[0] = 0;
-  state.big_data.power[0] = 0;
-  state.big_data.indoor_coil_temperature = state.sensors.room_temperature + 40;
-  state.big_data.outdoor_out_air_temperature = state.sensors.outdoor_temperature;
-  state.big_data.outdoor_coil_temperature = state.sensors.outdoor_temperature;
-  state.big_data.outdoor_in_air_temperature = state.sensors.outdoor_temperature;
-  state.big_data.outdoor_defrost_temperature = state.sensors.outdoor_temperature;
-  state.big_data.compressor_frequency = 0;
-  state.big_data.compressor_current[0] = 0;
-  state.big_data.compressor_current[1] = 0;
-  state.big_data.outdoor_fan_status = 0;
-  state.big_data.defrost_status = 0;
-  state.big_data.compressor_status = 0;
-  state.big_data.indoor_fan_status = 0;
-  state.big_data.four_way_valve_status = 0;
-  state.big_data.indoor_electric_heating_status = 0;
-  state.big_data.expansion_valve_open_degree[0] = 0;
-  state.big_data.expansion_valve_open_degree[1] = 0;
-  last_alarm_message = std::chrono::steady_clock::now();
-  alarm_paused = false;
-  alarm_stopped = true;
+bool HonServer::is_in_configuration_mode() const {
+  return this->config_mode_;
 }
 
-bool is_in_configuration_mode() {
-  return config_mode;
-}
-
-void process_alarms(haier_protocol::ProtocolHandler* protocol_handler)
+void HonServer::process_alarms_()
 {
-  if (!alarm_stopped && !protocol_handler->is_waiting_for_answer() && (protocol_handler->get_outgoing_queue_size() == 0)) {
+  if (!this->alarm_stopped_ && !this->protocol_handler_->is_waiting_for_answer() && (this->protocol_handler_->get_outgoing_queue_size() == 0)) {
     std::chrono::steady_clock::time_point now = std::chrono::steady_clock::now();
-    if (( alarm_paused && (std::chrono::duration_cast<std::chrono::milliseconds>(now - last_alarm_message).count() > LONG_ALARM_REPORT_INTERVAL_MS)) ||
-        (!alarm_paused && (std::chrono::duration_cast<std::chrono::milliseconds>(now - last_alarm_message).count() > SHORT_ALARM_REPORT_INTERVAL_MS))) {
-      alarm_paused = false;
-      protocol_handler->send_message(haier_protocol::HaierMessage(haier_protocol::FrameType::ALARM_STATUS, 0x0F5A, alarm_status_buf, sizeof(alarm_status_buf)), true);
-      last_alarm_message = now;
+    if (( this->alarm_paused_ && (std::chrono::duration_cast<std::chrono::milliseconds>(now - this->last_alarm_message_).count() > LONG_ALARM_REPORT_INTERVAL_MS)) ||
+        (!this->alarm_paused_ && (std::chrono::duration_cast<std::chrono::milliseconds>(now - this->last_alarm_message_).count() > SHORT_ALARM_REPORT_INTERVAL_MS))) {
+      this->alarm_paused_ = false;
+      this->protocol_handler_->send_message(haier_protocol::HaierMessage(haier_protocol::FrameType::ALARM_STATUS, 0x0F5A, this->alarm_status_buf_, ALARM_BUF_SIZE), true);
+      this->last_alarm_message_ = now;
     }
   }
 }
 
-HvacFullStatus init_ac_state(uint8_t* buffer, size_t buffer_size) {
-  BUILD_BUG_ON(CONF_STATUS_MESSAGE_HEADER_SIZE < 0);
-  BUILD_BUG_ON(CONF_CONTROL_PACKET_SIZE < sizeof(esphome::haier::hon_protocol::HaierPacketControl));
-  BUILD_BUG_ON(CONF_SENSORS_PACKET_SIZE < sizeof(esphome::haier::hon_protocol::HaierPacketSensors));
-  BUILD_BUG_ON(CONF_BIG_DATA_PACKET_SIZE < sizeof(esphome::haier::hon_protocol::HaierPacketBigData));
-  assert(buffer_size >= TOTAL_PACKET_SIZE);
-  memset(buffer, 0, TOTAL_PACKET_SIZE);
-  HvacFullStatus ac_state{
-    (esphome::haier::hon_protocol::HaierPacketControl&)buffer[CONF_STATUS_MESSAGE_HEADER_SIZE],
-    (esphome::haier::hon_protocol::HaierPacketSensors&)buffer[CONF_STATUS_MESSAGE_HEADER_SIZE + CONF_CONTROL_PACKET_SIZE],
-    (esphome::haier::hon_protocol::HaierPacketBigData&)buffer[CONF_STATUS_MESSAGE_HEADER_SIZE + CONF_CONTROL_PACKET_SIZE + CONF_SENSORS_PACKET_SIZE]
-  };
-  init_ac_state_internal(ac_state);
-  return ac_state;
-}
-
-bool start_alarm(uint8_t alarm_id) {
+bool HonServer::start_alarm(uint8_t alarm_id) {
   if (alarm_id >= esphome::haier::hon_protocol::HON_ALARM_COUNT)
     return false;
-  alarm_paused = false;
-  alarm_stopped = false;
-  alarm_status_buf[ALARM_BUF_SIZE - 1 - (uint8_t)(alarm_id / 8)] |= (1 << (alarm_id % 8));
+  this->alarm_paused_ = false;
+  this->alarm_stopped_ = false;
+  this->alarm_status_buf_[ALARM_BUF_SIZE - 1 - (uint8_t)(alarm_id / 8)] |= (1 << (alarm_id % 8));
   return true;
 }
 
-void reset_alarms() {
-  memset(alarm_status_buf, 0, sizeof(ALARM_BUF_SIZE));
-  alarm_paused = false;
+void HonServer::reset_alarms() {
+  memset(this->alarm_status_buf_, 0, ALARM_BUF_SIZE);
+  this->alarm_paused_ = false;
 }
 
-haier_protocol::HandlerError get_device_version_handler(haier_protocol::ProtocolHandler* protocol_handler, haier_protocol::FrameType type, const uint8_t* buffer, size_t size) {
+const uint8_t* HonServer::get_status_message_buffer() const {
+	return this->status_message_buffer_;
+}
+
+HvacState HonServer::get_ac_state() const {
+	HvacState state;
+	state.control = *this->control_packet_;
+	state.sensors = *this->sensors_packet_;
+	state.big_data = *this->big_data_packet_;
+	return state;
+}
+
+void HonServer::loop() {
+	this->protocol_handler_->loop();
+	this->process_alarms_();
+}
+
+haier_protocol::HandlerError HonServer::get_device_version_handler_(haier_protocol::FrameType type, const uint8_t* buffer, size_t size) {
   if (type == haier_protocol::FrameType::GET_DEVICE_VERSION) {
     if ((size == 0) || (size == 2)) {
       static const uint8_t device_version_info_buf[]{
@@ -173,112 +190,112 @@ haier_protocol::HandlerError get_device_version_handler(haier_protocol::Protocol
         0x00, // Reserved
         0x04, 0x5B // Device features (CRC is supported)
       };
-      protocol_handler->send_answer(haier_protocol::HaierMessage(haier_protocol::FrameType::GET_DEVICE_VERSION_RESPONSE, device_version_info_buf, sizeof(device_version_info_buf)), true);
+      this->protocol_handler_->send_answer(haier_protocol::HaierMessage(haier_protocol::FrameType::GET_DEVICE_VERSION_RESPONSE, device_version_info_buf, sizeof(device_version_info_buf)), true);
       return haier_protocol::HandlerError::HANDLER_OK;
     } else {
-      protocol_handler->send_answer(INVALID_MSG);
+        this->protocol_handler_->send_answer(INVALID_MSG);
       return haier_protocol::HandlerError::WRONG_MESSAGE_STRUCTURE;
     }
   } else {
-    protocol_handler->send_answer(INVALID_MSG);
+      this->protocol_handler_->send_answer(INVALID_MSG);
     return haier_protocol::HandlerError::UNSUPPORTED_MESSAGE;
   }
 }
 
-haier_protocol::HandlerError get_device_id_handler(haier_protocol::ProtocolHandler* protocol_handler, haier_protocol::FrameType type, const uint8_t* buffer, size_t size) {
+haier_protocol::HandlerError HonServer::get_device_id_handler_(haier_protocol::FrameType type, const uint8_t* buffer, size_t size) {
   if (type == haier_protocol::FrameType::GET_DEVICE_ID) {
     if (size == 0) {
       static const uint8_t device_id_buf[] = { 0x20, 0x20, 0x62, 0x84, 0x20, 0xD2, 0x85, 0x34, 0x02, 0x12, 0x71, 0xFB, 0xE0, 0xF4, 0x0D, 0x00,
                                   0x00, 0x00, 0x82, 0x0C, 0xC8, 0x1B, 0xF1, 0x3C, 0x46, 0xAB, 0x92, 0x5B, 0xCE, 0x95, 0x77, 0xC0, // TypeID, 32 bytes binary value (automatically generated when a device is created)
                                   0x04 // Device role (accessory device)
       };
-      protocol_handler->send_answer(haier_protocol::HaierMessage(haier_protocol::FrameType::GET_DEVICE_ID_RESPONSE, device_id_buf, sizeof(device_id_buf)), true);
+      this->protocol_handler_->send_answer(haier_protocol::HaierMessage(haier_protocol::FrameType::GET_DEVICE_ID_RESPONSE, device_id_buf, sizeof(device_id_buf)), true);
       return haier_protocol::HandlerError::HANDLER_OK;
     } else {
-      protocol_handler->send_answer(INVALID_MSG);
+      this->protocol_handler_->send_answer(INVALID_MSG);
       return haier_protocol::HandlerError::UNSUPPORTED_SUBCOMMAND;
     }
   } else {
-    protocol_handler->send_answer(INVALID_MSG);
+    this->protocol_handler_->send_answer(INVALID_MSG);
     return haier_protocol::HandlerError::UNSUPPORTED_MESSAGE;
   }
 }
 
-haier_protocol::HandlerError status_request_handler(haier_protocol::ProtocolHandler* protocol_handler, HvacFullStatus& ac_state, haier_protocol::FrameType type, const uint8_t* buffer, size_t size) {
+haier_protocol::HandlerError HonServer::status_request_handler_(haier_protocol::FrameType type, const uint8_t* buffer, size_t size) {
   if (type == haier_protocol::FrameType::CONTROL) {
     if (size < 2) {
-      protocol_handler->send_answer(INVALID_MSG);
+        this->protocol_handler_->send_answer(INVALID_MSG);
       return haier_protocol::HandlerError::WRONG_MESSAGE_STRUCTURE;
     }
     uint16_t subcommand = (buffer[0] << 8) | buffer[1];
     switch (subcommand) {
     case (uint16_t)SubcommandsControl::GET_USER_DATA:
       if (size != 2) {
-        protocol_handler->send_answer(INVALID_MSG);
+        this->protocol_handler_->send_answer(INVALID_MSG);
         return haier_protocol::HandlerError::WRONG_MESSAGE_STRUCTURE;
       }
-      protocol_handler->send_answer(haier_protocol::HaierMessage(haier_protocol::FrameType::STATUS, 0x6D01, (uint8_t*)&ac_state, USER_DATA_SIZE));
+      this->protocol_handler_->send_answer(haier_protocol::HaierMessage(haier_protocol::FrameType::STATUS, 0x6D01, this->status_message_buffer_, this->protocol_settings_.status_message_header_size + this->protocol_settings_.control_packet_size + this->protocol_settings_.sensors_packet_size));
       return haier_protocol::HandlerError::HANDLER_OK;
     case (uint16_t)SubcommandsControl::GET_BIG_DATA:
       if (size != 2) {
-        protocol_handler->send_answer(INVALID_MSG);
+          this->protocol_handler_->send_answer(INVALID_MSG);
         return haier_protocol::HandlerError::WRONG_MESSAGE_STRUCTURE;
       }
-      protocol_handler->send_answer(haier_protocol::HaierMessage(haier_protocol::FrameType::STATUS, 0x7D01, (uint8_t*)&ac_state, BIG_DATA_SIZE));
+      this->protocol_handler_->send_answer(haier_protocol::HaierMessage(haier_protocol::FrameType::STATUS, 0x7D01, this->status_message_buffer_, this->protocol_settings_.status_message_header_size + this->protocol_settings_.control_packet_size + this->protocol_settings_.sensors_packet_size + this->protocol_settings_.big_data_packet_size));
       return haier_protocol::HandlerError::HANDLER_OK;
     case (uint16_t)SubcommandsControl::SET_GROUP_PARAMETERS:
       if (size - 2 != sizeof(HaierPacketControl)) {
         HAIER_LOGW("Wrong control packet size, expected %d, received %d", sizeof(HaierPacketControl), size - 2);
-        protocol_handler->send_answer(INVALID_MSG);
+        this->protocol_handler_->send_answer(INVALID_MSG);
         return haier_protocol::HandlerError::WRONG_MESSAGE_STRUCTURE;
       }
       for (unsigned int i = 0; i < sizeof(HaierPacketControl); i++) {
-        uint8_t& cbyte = ((uint8_t*)&ac_state)[i];
+        uint8_t& cbyte = ((uint8_t*)this->control_packet_)[i];
         if (cbyte != buffer[2 + i]) {
           HAIER_LOGI("Byte #%d changed 0x%02X => 0x%02X", i + 10, cbyte, buffer[2 + i]);
           cbyte = buffer[2 + i];
         }
       }
-      protocol_handler->send_answer(haier_protocol::HaierMessage(haier_protocol::FrameType::STATUS, 0x6D5F, (uint8_t*)&ac_state, USER_DATA_SIZE));
+      this->protocol_handler_->send_answer(haier_protocol::HaierMessage(haier_protocol::FrameType::STATUS, 0x6D5F, this->status_message_buffer_, this->protocol_settings_.status_message_header_size + this->protocol_settings_.control_packet_size + this->protocol_settings_.sensors_packet_size));
       return haier_protocol::HandlerError::HANDLER_OK;
     default:
       if ((subcommand & 0xFF00) == (uint16_t)SubcommandsControl::SET_SINGLE_PARAMETER) {
         if (size != 4) {
           HAIER_LOGW("Wrong control packet size, expected 2, received %d", size - 2);
-          protocol_handler->send_answer(INVALID_MSG);
+          this->protocol_handler_->send_answer(INVALID_MSG);
           return haier_protocol::HandlerError::WRONG_MESSAGE_STRUCTURE;
         }
         uint8_t parameter = buffer[1];
         uint16_t value = (buffer[2] << 8) + buffer[3];
-        return process_single_parameter(protocol_handler, ac_state, parameter, value);
+        return this->process_single_parameter_(parameter, value);
       }
       else {
-        protocol_handler->send_answer(INVALID_MSG);
+          this->protocol_handler_->send_answer(INVALID_MSG);
         return haier_protocol::HandlerError::UNSUPPORTED_SUBCOMMAND;
       }
     }
   } else {
-    protocol_handler->send_answer(INVALID_MSG);
+      this->protocol_handler_->send_answer(INVALID_MSG);
     return haier_protocol::HandlerError::UNSUPPORTED_MESSAGE;
   }
 }
 
-haier_protocol::HandlerError alarm_status_handler(haier_protocol::ProtocolHandler* protocol_handler, haier_protocol::FrameType type, const uint8_t* buffer, size_t size) {
+haier_protocol::HandlerError HonServer::alarm_status_handler_(haier_protocol::FrameType type, const uint8_t* buffer, size_t size) {
   if (type == haier_protocol::FrameType::GET_ALARM_STATUS) {
     if (size == 0) {
-      protocol_handler->send_answer(haier_protocol::HaierMessage(haier_protocol::FrameType::GET_ALARM_STATUS_RESPONSE, 0x0F5A, alarm_status_buf, sizeof(alarm_status_buf)));
+        this->protocol_handler_->send_answer(haier_protocol::HaierMessage(haier_protocol::FrameType::GET_ALARM_STATUS_RESPONSE, 0x0F5A, this->alarm_status_buf_, ALARM_BUF_SIZE));
       return haier_protocol::HandlerError::HANDLER_OK;
     } else {
-      protocol_handler->send_answer(INVALID_MSG);
+        this->protocol_handler_->send_answer(INVALID_MSG);
       return haier_protocol::HandlerError::WRONG_MESSAGE_STRUCTURE;
     }
   } else {
-    protocol_handler->send_answer(INVALID_MSG);
+      this->protocol_handler_->send_answer(INVALID_MSG);
     return haier_protocol::HandlerError::UNSUPPORTED_MESSAGE;
   }
 }
 
-haier_protocol::HandlerError get_management_information_handler(haier_protocol::ProtocolHandler* protocol_handler, haier_protocol::FrameType type, const uint8_t* buffer, size_t size) {
+haier_protocol::HandlerError HonServer::get_management_information_handler_(haier_protocol::FrameType type, const uint8_t* buffer, size_t size) {
   if (type == haier_protocol::FrameType::GET_MANAGEMENT_INFORMATION) {
     if (size == 0) {
       static const uint8_t management_information_buf[] = { 
@@ -288,26 +305,26 @@ haier_protocol::HandlerError get_management_information_handler(haier_protocol::
         0x00, // Forced setting (not mandatory)
         0x00, 0x00 // Reserved
       };
-      protocol_handler->send_answer(haier_protocol::HaierMessage(haier_protocol::FrameType::GET_MANAGEMENT_INFORMATION_RESPONSE, management_information_buf, sizeof(management_information_buf)));
+      this->protocol_handler_->send_answer(haier_protocol::HaierMessage(haier_protocol::FrameType::GET_MANAGEMENT_INFORMATION_RESPONSE, management_information_buf, sizeof(management_information_buf)));
       return haier_protocol::HandlerError::HANDLER_OK;
     } else {
-      protocol_handler->send_answer(INVALID_MSG);
+        this->protocol_handler_->send_answer(INVALID_MSG);
       return haier_protocol::HandlerError::UNSUPPORTED_SUBCOMMAND;
     }
   } else {
-    protocol_handler->send_answer(INVALID_MSG);
+      this->protocol_handler_->send_answer(INVALID_MSG);
     return haier_protocol::HandlerError::UNSUPPORTED_MESSAGE;
   }
 }
 
-haier_protocol::HandlerError report_network_status_handler(haier_protocol::ProtocolHandler* protocol_handler, HvacFullStatus& ac_state, haier_protocol::FrameType type, const uint8_t* buffer, size_t size) {
+haier_protocol::HandlerError HonServer::report_network_status_handler_(haier_protocol::FrameType type, const uint8_t* buffer, size_t size) {
   if (type == haier_protocol::FrameType::REPORT_NETWORK_STATUS) {
     if (size == 4) {
       uint8_t st = buffer[1];
-      config_mode = st == 3;
-      if (!config_mode && (ac_state.control.set_point == 0x0E))
-        ac_state.control.set_point = 0x0D;
-      if (st != communication_status) {
+      this->config_mode_ = st == 3;
+      if (!this->config_mode_ && (this->control_packet_->set_point == 0x0E))
+        this->control_packet_->set_point = 0x0D;
+      if (st != this->communication_status_) {
         switch (st) {
         case 0:
           HAIER_LOGI("Network status: Communication is normal");
@@ -325,28 +342,28 @@ haier_protocol::HandlerError report_network_status_handler(haier_protocol::Proto
           HAIER_LOGW("Network status:  Unknown status 0x02X", st);
           break;
         }
-        communication_status = st;
+        this->communication_status_ = st;
       }
-      protocol_handler->send_answer(CONFIRM_MSG);
+      this->protocol_handler_->send_answer(CONFIRM_MSG);
       return haier_protocol::HandlerError::HANDLER_OK;
     } else {
-      protocol_handler->send_answer(INVALID_MSG);
+        this->protocol_handler_->send_answer(INVALID_MSG);
       return haier_protocol::HandlerError::WRONG_MESSAGE_STRUCTURE;
     }
   } else {
-    protocol_handler->send_answer(INVALID_MSG);
+      this->protocol_handler_->send_answer(INVALID_MSG);
     return haier_protocol::HandlerError::UNSUPPORTED_MESSAGE;
   }
 }
 
-haier_protocol::HandlerError alarm_status_report_answer_handler(haier_protocol::ProtocolHandler* protocol_handler, haier_protocol::FrameType request_type, haier_protocol::FrameType message_type, const uint8_t* data, size_t data_size) {
+haier_protocol::HandlerError HonServer::alarm_status_report_answer_handler_(haier_protocol::FrameType request_type, haier_protocol::FrameType message_type, const uint8_t* data, size_t data_size) {
   if (request_type == haier_protocol::FrameType::ALARM_STATUS) {
     if (message_type == haier_protocol::FrameType::CONFIRM) {
       if (data_size == 0) {
         if (!has_active_alarms())
-          alarm_stopped = true;
+          this->alarm_stopped_ = true;
         else
-          alarm_paused = true;
+          this->alarm_paused_ = true;
         return haier_protocol::HandlerError::HANDLER_OK;
       }
       else
@@ -359,32 +376,32 @@ haier_protocol::HandlerError alarm_status_report_answer_handler(haier_protocol::
     return haier_protocol::HandlerError::UNEXPECTED_MESSAGE;
 }
 
-haier_protocol::HandlerError stop_alarm_handler(haier_protocol::ProtocolHandler* protocol_handler, haier_protocol::FrameType type, const uint8_t* buffer, size_t size) {
+haier_protocol::HandlerError HonServer::stop_alarm_handler_(haier_protocol::FrameType type, const uint8_t* buffer, size_t size) {
   if (type == haier_protocol::FrameType::STOP_FAULT_ALARM) {
     if (size == 0) {
       HAIER_LOGI("Stop alarm message received.");
-      alarm_stopped = true;
-      protocol_handler->send_answer(CONFIRM_MSG);
+      this->alarm_stopped_ = true;
+      this->protocol_handler_->send_answer(CONFIRM_MSG);
       return haier_protocol::HandlerError::HANDLER_OK;
     }
     else {
-      protocol_handler->send_answer(INVALID_MSG);
+        this->protocol_handler_->send_answer(INVALID_MSG);
       return haier_protocol::HandlerError::WRONG_MESSAGE_STRUCTURE;
     }
   }
   else {
-    protocol_handler->send_answer(INVALID_MSG);
+      this->protocol_handler_->send_answer(INVALID_MSG);
     return haier_protocol::HandlerError::UNSUPPORTED_MESSAGE;
   }
 }
 
-haier_protocol::HandlerError process_single_parameter(haier_protocol::ProtocolHandler* protocol_handler, HvacFullStatus& ac_state, uint8_t parameter, uint16_t value)
+haier_protocol::HandlerError HonServer::process_single_parameter_(uint8_t parameter, uint16_t value)
 {
   #define SET_IF_DIFFERENT(VALUE, FIELD) \
       do { \
-        if (ac_state.control.FIELD != VALUE) { \
+        if (this->control_packet_->FIELD != VALUE) { \
           HAIER_LOGI(#FIELD" <= %u", VALUE); \
-          ac_state.control.FIELD = VALUE; \
+          this->control_packet_->FIELD = VALUE; \
         } \
       } while (0)
   haier_protocol::HandlerError result = haier_protocol::HandlerError::HANDLER_OK;
@@ -460,10 +477,10 @@ haier_protocol::HandlerError process_single_parameter(haier_protocol::ProtocolHa
       break;
   }
   if (result == haier_protocol::HandlerError::HANDLER_OK) {
-    protocol_handler->send_answer(haier_protocol::HaierMessage(haier_protocol::FrameType::STATUS, 0x6D01, (uint8_t*)&ac_state, USER_DATA_SIZE));
+      this->protocol_handler_->send_answer(haier_protocol::HaierMessage(haier_protocol::FrameType::STATUS, 0x6D01, this->status_message_buffer_, this->protocol_settings_.status_message_header_size + this->protocol_settings_.control_packet_size + this->protocol_settings_.sensors_packet_size));
   }
   else {
-    protocol_handler->send_answer(INVALID_MSG);
+      this->protocol_handler_->send_answer(INVALID_MSG);
   }
   return result;
   #undef SET_IF_DIFFERENT

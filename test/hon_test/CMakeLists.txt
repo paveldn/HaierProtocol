@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.19)
 
 set(TEST_NAME "hon_test")
 
-project(${TEST_NAME} VERSION "1.0.0" DESCRIPTION "hOn protocol test")
+project(${TEST_NAME} VERSION "1.1.0" DESCRIPTION "hOn protocol test")
 
 set(LIB_ROOT "${CMAKE_CURRENT_SOURCE_DIR}/../..")
 set(TOOLS_PATH "${CMAKE_CURRENT_SOURCE_DIR}/../../tools")
