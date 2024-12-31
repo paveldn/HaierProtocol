@@ -15,10 +15,10 @@ constexpr size_t SHORT_ALARM_REPORT_INTERVAL_MS = 300;
 constexpr size_t LONG_ALARM_REPORT_INTERVAL_MS = 5000;
 
 HonServer::HonServer(haier_protocol::ProtocolStream& stream, HonProtocolSettings settings) : 
+	HaierBaseServer(stream),
     protocol_settings_(settings),
 	status_message_buffer_size_(settings.get_total_status_data_size()),
-	status_message_buffer_(new uint8_t[status_message_buffer_size_]),
-	protocol_handler_(new haier_protocol::ProtocolHandler(stream)) 
+	status_message_buffer_(new uint8_t[status_message_buffer_size_])
 {
 	assert(settings.control_packet_size >= sizeof(esphome::haier::hon_protocol::HaierPacketControl));
 	assert(settings.sensors_packet_size >= sizeof(esphome::haier::hon_protocol::HaierPacketSensors));
@@ -30,10 +30,6 @@ HonServer::HonServer(haier_protocol::ProtocolStream& stream, HonProtocolSettings
 HonServer::HonServer(haier_protocol::ProtocolStream& stream) : HonServer(stream, HonProtocolSettings()) {
 }
 
-HonServer::~HonServer() {
-    delete this->protocol_handler_;
-}
-
 void HonServer::register_handlers_() {
     this->protocol_handler_->set_message_handler(haier_protocol::FrameType::GET_DEVICE_VERSION, std::bind(&HonServer::get_device_version_handler_, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
     this->protocol_handler_->set_message_handler(haier_protocol::FrameType::GET_DEVICE_ID, std::bind(&HonServer::get_device_id_handler_, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
@@ -41,6 +37,8 @@ void HonServer::register_handlers_() {
     this->protocol_handler_->set_message_handler(haier_protocol::FrameType::GET_ALARM_STATUS, std::bind(&HonServer::alarm_status_handler_, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
 	this->protocol_handler_->set_message_handler(haier_protocol::FrameType::GET_MANAGEMENT_INFORMATION, std::bind(&HonServer::get_management_information_handler_, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
 	this->protocol_handler_->set_message_handler(haier_protocol::FrameType::REPORT_NETWORK_STATUS, std::bind(&HonServer::report_network_status_handler_, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
+	this->protocol_handler_->set_message_handler(haier_protocol::FrameType::STOP_FAULT_ALARM, std::bind(&HonServer::stop_alarm_handler_, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
+	this->protocol_handler_->set_answer_handler(haier_protocol::FrameType::ALARM_STATUS, std::bind(&HonServer::alarm_status_report_answer_handler_, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3, std::placeholders::_4));
 }
 
 void HonServer::init_ac_state_internal_() {
@@ -163,7 +161,7 @@ const uint8_t* HonServer::get_status_message_buffer() const {
 	return this->status_message_buffer_;
 }
 
-HvacState HonServer::get_ac_state() const {
+HvacState HonServer::get_hvac_state() const {
 	HvacState state;
 	state.control = *this->control_packet_;
 	state.sensors = *this->sensors_packet_;
@@ -171,8 +169,14 @@ HvacState HonServer::get_ac_state() const {
 	return state;
 }
 
+void HonServer::set_hvac_state(const HvacState& state) {
+	*this->control_packet_ = state.control;
+	*this->sensors_packet_ = state.sensors;
+	*this->big_data_packet_ = state.big_data;
+}
+
 void HonServer::loop() {
-	this->protocol_handler_->loop();
+	HaierBaseServer::loop();
 	this->process_alarms_();
 }
 

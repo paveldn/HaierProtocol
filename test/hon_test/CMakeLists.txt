@@ -18,10 +18,12 @@ link_libraries(HaierProtocol)
 
 add_executable("${TEST_NAME}"
     "${TOOLS_PATH}/utils/console_log.cpp"
+    "${TOOLS_PATH}/utils/base_server.cpp"
     "${TOOLS_PATH}/utils/hon_server.cpp"
     "${TEST_UTILS_PATH}/virtual_stream.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/main.cpp"
     "${TOOLS_PATH}/utils/console_log.h"
+    "${TOOLS_PATH}/utils/base_server.h"
     "${TOOLS_PATH}/utils/hon_server.h"
     "${TEST_UTILS_PATH}/virtual_stream.h"
 )

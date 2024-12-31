@@ -140,7 +140,7 @@ int main(int argc, char** argv) {
 #if defined(RUN_ALL_TESTS) || defined(RUN_TEST7)
 	{
 		TEST_START(7);
-		HvacState ac_state_before(hon_server.get_ac_state());
+		HvacState ac_state_before(hon_server.get_hvac_state());
 		ac_state_before.control.ac_power = true;
 		ac_state_before.control.ac_mode = (uint8_t) ConditioningMode::HEALTHY_DRY;
 		ac_state_before.control.fan_mode = (uint8_t) FanMode::FAN_MID;
@@ -150,7 +150,7 @@ int main(int argc, char** argv) {
 		haier_protocol::HaierMessage control_message(haier_protocol::FrameType::CONTROL, (uint16_t)SubcommandsControl::SET_GROUP_PARAMETERS, (uint8_t*)&ac_state_before.control, sizeof(HaierPacketControl));
 		hon_client.send_message(control_message, true);
 		CLIENT_SERVER_LOOP();
-		HvacState ac_state_after(hon_server.get_ac_state());
+		HvacState ac_state_after(hon_server.get_hvac_state());
 		if (memcmp((void*) & ac_state_before.control, (void*) & ac_state_after.control, sizeof(HaierPacketControl)) == 0) {
 			HAIER_LOGI("AC control processed correctly");
 		}

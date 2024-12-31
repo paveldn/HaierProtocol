@@ -36,11 +36,13 @@ link_libraries(${LINK_LIBS})
 add_executable("${APP_NAME}"
     "${CMAKE_CURRENT_SOURCE_DIR}/../utils/console_log.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/../utils/serial_stream.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/../utils/base_server.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/../utils/hon_server.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/../utils/simulator_base.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/main.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/../utils/console_log.h"
     "${CMAKE_CURRENT_SOURCE_DIR}/../utils/serial_stream.h"
+    "${CMAKE_CURRENT_SOURCE_DIR}/../utils/base_server.h"
     "${CMAKE_CURRENT_SOURCE_DIR}/../utils/hon_server.h"
     "${CMAKE_CURRENT_SOURCE_DIR}/../utils/simulator_base.h"
 )
