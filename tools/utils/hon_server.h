@@ -18,6 +18,10 @@ struct HonProtocolSettings {
   uint8_t control_packet_size;
   uint8_t sensors_packet_size;
   uint8_t big_data_packet_size;
+  std::string device_name;
+  std::string protocol_version;
+  std::string software_version;
+  std::string hardware_version;
   bool encription;    // Not supported yet
   bool crc;
   HonProtocolSettings() :
@@ -25,6 +29,10 @@ struct HonProtocolSettings {
     control_packet_size(sizeof(esphome::haier::hon_protocol::HaierPacketControl)),
     sensors_packet_size(sizeof(esphome::haier::hon_protocol::HaierPacketSensors) + 4),
     big_data_packet_size(sizeof(esphome::haier::hon_protocol::HaierPacketBigData)),
+    device_name("U-AC"),
+    protocol_version("E++2.18"),
+    software_version("17062600"),
+    hardware_version("17052600"),
     encription(false),
     crc(true)
   {}

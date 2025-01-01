@@ -183,17 +183,40 @@ void HonServer::loop() {
 haier_protocol::HandlerError HonServer::get_device_version_handler_(haier_protocol::FrameType type, const uint8_t* buffer, size_t size) {
   if (type == haier_protocol::FrameType::GET_DEVICE_VERSION) {
     if ((size == 0) || (size == 2)) {
-      static const uint8_t device_version_info_buf[]{
-        'E', '+', '+', '2', '.', '1', '8', '\0', // Device protocol version
-        '1', '7', '0', '6', '2', '6', '0', '0', // Device software version
-        0xF1, // Encryption type (0xF1 - not supported)
-        0x00, 0x00, // Reserved
-        '1', '7', '0', '5', '2', '6', '0', '0', // Device hardware version
-        0x01, // Communication mode (controller/device communication mode supported)
-        'U', '-', 'A', 'C', '\0', '\0', '\0', '\0', // Device name
-        0x00, // Reserved
-        0x04, 0x5B // Device features (CRC is supported)
+      // Known devices names:
+      // U-AC  - Air conditioner
+      // U-EWH - Electric water heater
+      static uint8_t device_version_info_buf[]{
+        /* 00 */ 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, // Device protocol version reserved
+        /* 08 */ 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, // Device software version reserved
+        /* 16 */ 0xF1, // Encryption type (0xF1 - not supported)
+        /* 17 */ 0x00, 0x00, // Reserved
+        /* 19 */ 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, // Device hardware version reserved
+        /* 27 */ 0x01, // Communication mode (controller/device communication mode supported)
+        /* 28 */ 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, // Device name reserved
+        /* 36 */ 0x00, // Reserved
+        /* 37 */ 0x04, 0x5B // Device features (CRC is supported)
       };
+      static bool first_run = true;
+      if (first_run) {
+        first_run = false;
+        for (int i = 0; (i < 8) && (i < this->protocol_settings_.protocol_version.length()); i++) {
+          device_version_info_buf[0 + i] = this->protocol_settings_.protocol_version[i];
+        }
+        for (int i = 0; (i < 8) && (i < this->protocol_settings_.software_version.length()); i++) {
+          device_version_info_buf[8 + i] = this->protocol_settings_.software_version[i];
+        }
+        for (int i = 0; (i < 8) && (i < this->protocol_settings_.hardware_version.length()); i++) {
+          device_version_info_buf[20 + i] = this->protocol_settings_.hardware_version[i];
+        }
+        for (int i = 0; (i < 8) && (i < this->protocol_settings_.device_name.length()); i++) {
+          device_version_info_buf[28 + i] = this->protocol_settings_.device_name[i];
+        }
+        if (this->protocol_settings_.encription)
+          device_version_info_buf[16] = 0x01;
+        else
+          device_version_info_buf[16] = 0xF1;
+      }
       this->protocol_handler_->send_answer(haier_protocol::HaierMessage(haier_protocol::FrameType::GET_DEVICE_VERSION_RESPONSE, device_version_info_buf, sizeof(device_version_info_buf)), true);
       return haier_protocol::HandlerError::HANDLER_OK;
     } else {
