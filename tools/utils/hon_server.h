@@ -3,7 +3,7 @@
 #include <stdint.h>
 #include "protocol/haier_protocol.h"
 #include "hon_packet.h"
-#include "base_server.h"
+#include "server_base.h"
 
 struct HvacState {
   esphome::haier::hon_protocol::HaierPacketControl control;

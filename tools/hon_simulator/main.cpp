@@ -17,6 +17,9 @@ PiringMode _pairing_mode{ PiringMode::NONE };
 bool _toggle_ac_power{ false };
 bool _trigger_random_alarm{ false };
 bool _reset_alarm{ false };
+bool _stop_cleaning{ false };
+bool _toggle_quiet_mode{ false };
+bool _toggle_health_mode{ false };
 
 void preloop(HaierBaseServer* server) {
   HonServer* hon_server = dynamic_cast<HonServer*>(server);
@@ -79,6 +82,28 @@ void preloop(HaierBaseServer* server) {
     HAIER_LOGI("Reseting all alarms");
     hon_server->reset_alarms();
   }
+  if (_stop_cleaning) {
+    _stop_cleaning = false;
+    HAIER_LOGI("Stopping cleaning");
+    HvacState ac_state = hon_server->get_hvac_state();
+    ac_state.control.self_cleaning_status = false;
+    ac_state.control.steri_clean = false;
+    hon_server->set_hvac_state(ac_state);
+  }
+  if (_toggle_quiet_mode) {
+    _toggle_quiet_mode = false;
+    HvacState ac_state = hon_server->get_hvac_state();
+    ac_state.control.quiet_mode = 1 - ac_state.control.quiet_mode;
+    hon_server->set_hvac_state(ac_state);
+    HAIER_LOGI("Quiet mode is %s", ac_state.control.quiet_mode == 1 ? "On" : "Off");
+  }
+  if (_toggle_health_mode) {
+    _toggle_health_mode = false;
+    HvacState ac_state = hon_server->get_hvac_state();
+    ac_state.control.health_mode = 1 - ac_state.control.health_mode;
+    hon_server->set_hvac_state(ac_state);
+    HAIER_LOGI("Health mode is %s", ac_state.control.health_mode == 1 ? "On" : "Off");
+  }
 }
 
 int main(int argc, char** argv) {
@@ -93,18 +118,9 @@ int main(int argc, char** argv) {
     keyboard_handlers khandlers;
     khandlers['1'] = []() { _toggle_ac_power = true; };
     khandlers['2'] = []() { _pairing_mode = PiringMode::HON_PAIRING; };
-    khandlers['3'] = []() {
-      ac_state.control.self_cleaning_status = false;
-      ac_state.control.steri_clean = false; 
-    };
-    khandlers['4'] = []() {
-      ac_state.control.quiet_mode = 1 - ac_state.control.quiet_mode;
-      HAIER_LOGI("Quiet mode is %s", ac_state.control.quiet_mode  == 1 ? "On" : "Off");
-    };
-    khandlers['5'] = []() {
-      ac_state.control.health_mode = 1 - ac_state.control.health_mode;
-      HAIER_LOGI("Health mode is %s", ac_state.control.health_mode == 1 ? "On" : "Off");
-    };
+    khandlers['3'] = []() { _stop_cleaning = true; };
+    khandlers['4'] = []() { _toggle_quiet_mode = true; };
+    khandlers['5'] = []() { _toggle_health_mode = true; };
     khandlers['a'] = []() { _trigger_random_alarm = true; };
     khandlers['s'] = []() { _reset_alarm = true; };
     simulator_main("hOn HVAC simulator", argv[1], &server, khandlers, preloop);

@@ -1,5 +1,5 @@
 ﻿#include <cassert>
-#include "base_server.h"
+#include "server_base.h"
 #include "protocol/haier_protocol.h"
 
 HaierBaseServer::HaierBaseServer(haier_protocol::ProtocolStream& stream) :

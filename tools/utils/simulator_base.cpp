@@ -17,7 +17,7 @@ void protocol_loop(HaierBaseServer* server, protocol_preloop ploop) {
 
 void simulator_main(const char* app_name, const char* port_name, HaierBaseServer* server, keyboard_handlers khandlers, protocol_preloop ploop) {
   haier_protocol::set_log_handler(console_logger);
-  std::thread protocol_thread(std::bind(&protocol_loop, &server, ploop));
+  std::thread protocol_thread(protocol_loop, server, ploop);
 #if _WIN32
   SetConsoleTitle(std::string(app_name).append(", port=").append(port_name).append(". Press ESC to exit").c_str());
 #endif
