@@ -18,4 +18,4 @@ jobs:
       - name: Compile Arduino example
         working-directory: test/ci/arduino_example
         run: |
-          arduino-cli compile --fqbn esp32:esp32:esp32 HaierProtocolTest.ino --libraries ../..
+          arduino-cli compile --fqbn esp32:esp32:esp32 . --libraries ../..
