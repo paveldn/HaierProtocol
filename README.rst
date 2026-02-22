@@ -14,6 +14,20 @@ This library is compatible with both **PlatformIO** and **Arduino** toolchains.
 - Public headers are located in the ``src`` tree (the ``include`` tree is no longer used).
 - For Arduino IDE/CLI, you can also include the main header:
 
+Note on C++ standard library support
+----------------------------------
+
+This library uses C++ timing facilities (``std::chrono``). It requires a
+toolchain and board core that provide the C++ standard library. Older or
+constrained Arduino cores (for example some AVR/Uno toolchains) may not
+provide ``<chrono>`` and will fail to compile. For these boards prefer
+PlatformIO or newer Arduino cores that include full C++ support.
+
+If you target constrained boards, see the Arduino usage documentation for
+workarounds and recommended cores.
+
+- For Arduino IDE/CLI, you can also include the main header:
+
   .. code-block:: cpp
 
     #include <HaierProtocol.h>
