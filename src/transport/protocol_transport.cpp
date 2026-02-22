@@ -6,7 +6,7 @@
 namespace haier_protocol
 {
 
-constexpr simple_time::ms_t FRAME_TIMEOUT_MS = 300;
+constexpr std::chrono::duration<long long, std::milli> FRAME_TIMEOUT(300);
 
 TransportLevelHandler::TransportLevelHandler(ProtocolStream &stream, size_t buffer_size) noexcept : stream_(stream),
   buffer_(buffer_size),
@@ -81,8 +81,8 @@ void TransportLevelHandler::process_data()
 {
   if (this->current_frame_.get_status() > FrameStatus::FRAME_EMPTY)
   {
-    simple_time::ms_t now = simple_time::now_ms();
-    if ((now - this->frame_start_) > FRAME_TIMEOUT_MS)
+    std::chrono::steady_clock::time_point now = std::chrono::steady_clock::now();
+    if (std::chrono::duration_cast<std::chrono::milliseconds>(now - this->frame_start_) > FRAME_TIMEOUT)
     {
       // Timeout
       HAIER_LOGW("Frame timeout!");
@@ -112,7 +112,6 @@ void TransportLevelHandler::process_data()
           if (this->pos_ - bytes_to_drop == FRAME_SEPARATORS_COUNT)
           {
             this->frame_start_found_ = true;
-            this->frame_start_ = simple_time::now_ms();
             if (bytes_to_drop > 0)
             {
               // Dropping garbage

@@ -3,7 +3,7 @@
 
 #include <stdint.h>
 #include <stddef.h>
-#include "utils/simple_time.h"
+#include <chrono>
 #include <functional>
 #include <map>
 #include <queue>
@@ -60,10 +60,10 @@ public:
 	size_t get_outgoing_queue_size() const noexcept {return this->outgoing_messages_.size(); };
 	bool is_waiting_for_answer() const {return (this->state_ == ProtocolState::WAITING_FOR_ANSWER); };
 	void set_answer_timeout(long long answer_timeout_miliseconds);
-	void set_answer_timeout(simple_time::ms_t answer_timeout);
+	void set_answer_timeout(std::chrono::milliseconds answer_timeout);
 	void set_cooldown_interval(long long answer_timeout_miliseconds);
-	void set_cooldown_interval(simple_time::ms_t answer_timeout);
-	void send_message(const HaierMessage& message, bool use_crc, uint8_t num_retries = 0, simple_time::ms_t interval = simple_time::zero_ms());
+	void set_cooldown_interval(std::chrono::milliseconds answer_timeout);
+	void send_message(const HaierMessage& message, bool use_crc, uint8_t num_retries = 0, std::chrono::milliseconds interval = std::chrono::milliseconds::zero());
 	void send_message_without_answer(const HaierMessage& message, bool use_crc);
 	void send_answer(const HaierMessage& answer);
 	void send_answer(const HaierMessage& answer, bool use_crc);
@@ -92,7 +92,7 @@ protected:
 		bool use_crc;
 		bool no_answer;
 		int number_of_retries;
-		simple_time::ms_t retry_interval;
+		std::chrono::milliseconds retry_interval;
 	};
 	using OutgoingQueue = std::queue<OutgoingQueueItem>;
 	TransportLevelHandler                   transport_;
@@ -108,11 +108,11 @@ protected:
 	bool                                    incoming_message_crc_status_;
 	bool                                    answer_sent_;
 	FrameType                               last_message_type_;
-	simple_time::ms_t               answer_timeout_interval_;
-	simple_time::ms_t               cooldown_interval_;
-	simple_time::ms_t               cooldown_time_point_;
-	simple_time::ms_t               answer_time_point_;
-	simple_time::ms_t               retry_time_point_;
+	std::chrono::milliseconds               answer_timeout_interval_;
+	std::chrono::milliseconds               cooldown_interval_;
+	std::chrono::steady_clock::time_point   cooldown_time_point_;
+	std::chrono::steady_clock::time_point   answer_time_point_;
+	std::chrono::steady_clock::time_point   retry_time_point_;
 };
 
 
