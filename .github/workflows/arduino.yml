@@ -16,10 +16,13 @@ jobs:
           # Add ESP32 core index and install the latest available esp32 core
           arduino-cli core update-index --additional-urls https://raw.githubusercontent.com/espressif/arduino-esp32/gh-pages/package_esp32_index.json
           arduino-cli core install esp32:esp32
-      - name: Install local library into Arduino CLI libraries
+      - name: Link local library into Arduino CLI
         run: |
-          mkdir -p $HOME/.arduino15/libraries
-          cp -R $GITHUB_WORKSPACE $HOME/.arduino15/libraries/HaierProtocol
+          # Link the repository as a library so arduino-cli can find it
+          arduino-cli lib link $GITHUB_WORKSPACE
+      - name: List Arduino CLI libraries (debug)
+        run: |
+          arduino-cli lib list || true
       - name: Compile Arduino example
         working-directory: test/ci/arduino_example
         run: |
