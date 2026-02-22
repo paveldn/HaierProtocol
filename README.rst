@@ -20,15 +20,6 @@ This library is compatible with both **PlatformIO** and **Arduino** toolchains.
 
 No migration is required for existing PlatformIO projects.
 
-Documentation
--------------
-
-- `Protocol reference <doc/protocol_reference.rst>`_
-- `PlatformIO usage example <doc/usage_platformio.rst>`_
-- `Arduino usage example <doc/usage_arduino.rst>`_
-- `hOn simulator <doc/hon_simulator.rst>`_
-- `SmartAir2 simulator <doc/smartair2_simulator.rst>`_
-
 Protocol description
 --------------------
 
@@ -73,3 +64,12 @@ Where:
  * **Frame data** - n byte, data of the frame, can be empty. Sometimes first 2 bytes of data are used as a subcommand. Max size 246
  * **Checksum** - 1 byte, the least significant byte of the sum of all bytes of the frame except separator bytes, CRC, and checksum itself.
  * **CRC** - 2 bytes, CRC 16 of all bytes of the frame except separator bytes, checksum byte, and CRC itself (`CRC-16/ARC <https://crccalc.com/?crc=&method=CRC-16/ARC&datatype=1&outtype=0>`_ algorithm used). CRC is available only if the frame flags byte indicates it.
+
+Documentation
+-------------
+
+- `Protocol reference <doc/protocol_reference.rst>`_
+- `PlatformIO usage example <doc/usage_platformio.rst>`_
+- `Arduino usage example <doc/usage_arduino.rst>`_
+- `hOn simulator <doc/hon_simulator.rst>`_
+- `SmartAir2 simulator <doc/smartair2_simulator.rst>`_

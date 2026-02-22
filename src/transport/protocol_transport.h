@@ -2,7 +2,7 @@
 #define PROTOCOL_TRANSPORT_H
 #include <stdint.h>
 #include <cstddef>
-#include <chrono>
+#include "utils/simple_time.h"
 #include <queue>
 #include "utils/haier_log.h"
 #include "utils/circular_buffer.h"
@@ -15,7 +15,7 @@ namespace haier_protocol
 struct TimestampedFrame
 {
 	HaierFrame frame;
-	std::chrono::steady_clock::time_point timestamp;
+	simple_time::ms_t timestamp;
 };
 
 class TransportLevelHandler
@@ -42,7 +42,7 @@ protected:
 	size_t                          sep_count_;
 	bool                            frame_start_found_;
 	HaierFrame                      current_frame_;
-	std::chrono::steady_clock::time_point   frame_start_;
+	simple_time::ms_t   frame_start_;
 	std::queue<TimestampedFrame>    incoming_queue_;
 };
 

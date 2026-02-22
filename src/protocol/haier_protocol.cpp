@@ -1,17 +1,17 @@
 #include <cstring>
-#include <chrono>
 #include <memory>
+#include "utils/simple_time.h"
 #include "protocol/haier_protocol.h"
 
 namespace haier_protocol
 {
 
 constexpr uint8_t MAX_PACKET_RETRIES = 9;
-constexpr std::chrono::milliseconds DEFAULT_ANSWER_TIMEOUT = std::chrono::milliseconds(200);
-constexpr std::chrono::milliseconds DEFAULT_COOLDOWN_INTERVAL = std::chrono::milliseconds(400);
+constexpr simple_time::ms_t DEFAULT_ANSWER_TIMEOUT = 200;
+constexpr simple_time::ms_t DEFAULT_COOLDOWN_INTERVAL = 400;
 
 #if HAIER_LOG_LEVEL > 3
-  static std::chrono::steady_clock::time_point last_message_sent_;
+  static simple_time::ms_t last_message_sent_;
 #endif
 
 ProtocolHandler::ProtocolHandler(ProtocolStream &stream) noexcept : ProtocolHandler(stream, MAX_FRAME_SIZE + 10)
@@ -34,14 +34,14 @@ ProtocolHandler::ProtocolHandler(ProtocolStream& stream, size_t buffer_size) noe
   answer_timeout_interval_(DEFAULT_ANSWER_TIMEOUT),
   cooldown_interval_(DEFAULT_COOLDOWN_INTERVAL)
 {
-  this->cooldown_time_point_ = std::chrono::steady_clock::time_point();
+  this->cooldown_time_point_ = simple_time::zero_ms();
 }
 
 void ProtocolHandler::loop()
 {
   this->transport_.read_data();
   this->transport_.process_data();
-  std::chrono::steady_clock::time_point now = std::chrono::steady_clock::now();
+  simple_time::ms_t now = simple_time::now_ms();
   switch (this->state_)
   {
   case ProtocolState::IDLE:
@@ -135,7 +135,7 @@ void ProtocolHandler::loop()
     if (this->transport_.available() > 0)
     {
 #if HAIER_LOG_LEVEL > 3
-      HAIER_LOGD("Answer delay %dms", std::chrono::duration_cast<std::chrono::milliseconds>(now - last_message_sent_));
+      HAIER_LOGD("Answer delay %dms", (int)(now - last_message_sent_));
 #endif
       TimestampedFrame frame;
       this->transport_.pop(frame);
@@ -175,7 +175,7 @@ bool ProtocolHandler::write_message_(const HaierMessage &message, bool use_crc)
   {
     HAIER_LOGE("Error sending message: %02X", frame_type);
   }
-  std::chrono::steady_clock::time_point now = std::chrono::steady_clock::now();
+  simple_time::ms_t now = simple_time::now_ms();
 #if HAIER_LOG_LEVEL > 3
   last_message_sent_ = now;
 #endif
@@ -185,32 +185,32 @@ bool ProtocolHandler::write_message_(const HaierMessage &message, bool use_crc)
 
 void ProtocolHandler::set_answer_timeout(long long answer_timeout_miliseconds)
 {
-  this->set_answer_timeout(std::chrono::milliseconds(answer_timeout_miliseconds));
+  this->set_answer_timeout(simple_time::ms_t(answer_timeout_miliseconds));
 }
 
-void ProtocolHandler::set_answer_timeout(std::chrono::milliseconds answer_timeout)
+void ProtocolHandler::set_answer_timeout(simple_time::ms_t answer_timeout)
 {
   this->answer_timeout_interval_ = answer_timeout;
 }
 
 void ProtocolHandler::set_cooldown_interval(long long answer_timeout_miliseconds)
 {
-  this->set_cooldown_interval(std::chrono::milliseconds(answer_timeout_miliseconds));
+  this->set_cooldown_interval(simple_time::ms_t(answer_timeout_miliseconds));
 }
 
-void ProtocolHandler::set_cooldown_interval(std::chrono::milliseconds answer_timeout)
+void ProtocolHandler::set_cooldown_interval(simple_time::ms_t answer_timeout)
 {
   this->cooldown_interval_ = answer_timeout;
 }
 
-void ProtocolHandler::send_message(const HaierMessage& message, bool use_crc, uint8_t num_repeats, std::chrono::milliseconds interval)
+void ProtocolHandler::send_message(const HaierMessage& message, bool use_crc, uint8_t num_repeats, simple_time::ms_t interval)
 {
   this->outgoing_messages_.push({ message, use_crc, false, std::min(num_repeats, MAX_PACKET_RETRIES) + 1, interval });
 }
 
 void ProtocolHandler::send_message_without_answer(const HaierMessage& message, bool use_crc)
 {
-  this->outgoing_messages_.push({ message, use_crc, true, 1, std::chrono::milliseconds::zero() });
+  this->outgoing_messages_.push({ message, use_crc, true, 1, simple_time::zero_ms() });
 }
 
 void ProtocolHandler::send_answer(const HaierMessage &answer)
