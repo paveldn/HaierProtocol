@@ -1,0 +1,21 @@
+name: Arduino CLI Build
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Arduino CLI
+        uses: arduino/setup-arduino-cli@v1
+      - name: Update cores and install esp32 core
+        run: |
+          arduino-cli core update-index
+          arduino-cli core install esp32:esp32 || true
+      - name: Compile Arduino example
+        working-directory: test/ci/arduino_example
+        run: |
+          arduino-cli compile --fqbn esp32:esp32:esp32 HaierProtocolTest.ino --libraries ../..

@@ -2,7 +2,7 @@
 #define HAIER_PROTOCOL_H
 
 #include <stdint.h>
-#include <cstddef>
+#include <stddef.h>
 #include <chrono>
 #include <functional>
 #include <map>
