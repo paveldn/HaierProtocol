@@ -27,7 +27,7 @@ if(WIN32)
 endif (WIN32)
 
 target_include_directories("${APP_NAME}" PRIVATE
-    "${LIB_ROOT}/include"
+    "${LIB_ROOT}/src"
     "${CMAKE_CURRENT_SOURCE_DIR}/../utils"
 )
 
