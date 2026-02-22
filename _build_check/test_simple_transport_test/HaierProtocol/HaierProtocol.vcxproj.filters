@@ -1,0 +1,69 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="17.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <ClCompile Include="E:\Work\git\HaierProtocol\tools\utils\console_log.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\Work\git\HaierProtocol\test\simple_transport_test\test.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\Work\git\HaierProtocol\src\protocol\haier_message.cpp">
+      <Filter>protocol</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\Work\git\HaierProtocol\src\protocol\haier_protocol.cpp">
+      <Filter>protocol</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\Work\git\HaierProtocol\src\transport\haier_frame.cpp">
+      <Filter>transport</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\Work\git\HaierProtocol\src\transport\protocol_transport.cpp">
+      <Filter>transport</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\Work\git\HaierProtocol\src\utils\haier_log.cpp">
+      <Filter>utils</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="E:\Work\git\HaierProtocol\src\protocol\haier_frame_types.h">
+      <Filter>protocol</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Work\git\HaierProtocol\src\protocol\haier_message.h">
+      <Filter>protocol</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Work\git\HaierProtocol\src\protocol\haier_protocol.h">
+      <Filter>protocol</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Work\git\HaierProtocol\src\transport\haier_frame.h">
+      <Filter>transport</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Work\git\HaierProtocol\src\transport\protocol_transport.h">
+      <Filter>transport</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Work\git\HaierProtocol\src\utils\circular_buffer.h">
+      <Filter>utils</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Work\git\HaierProtocol\src\utils\haier_log.h">
+      <Filter>utils</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Work\git\HaierProtocol\src\utils\protocol_stream.h">
+      <Filter>utils</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <CustomBuild Include="E:\Work\git\HaierProtocol\CMakeLists.txt" />
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="Source Files">
+      <UniqueIdentifier>{0CDB3D38-8EBA-3A63-98A7-8065855B0212}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="protocol">
+      <UniqueIdentifier>{FB8A6B4C-9BAA-3312-8D82-97EC7BECED79}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="transport">
+      <UniqueIdentifier>{4FAE3EF1-0690-39C6-8E5E-1519C48773D5}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="utils">
+      <UniqueIdentifier>{033BA156-86F5-3D5F-BDE9-0AB9D3E478F9}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+</Project>

@@ -25,7 +25,7 @@ if (UNIX)
 endif (UNIX)
 
 target_include_directories("${TEST_NAME}" PRIVATE
-    "${LIB_ROOT}/include"
+    "${LIB_ROOT}/src"
     "${CMAKE_CURRENT_SOURCE_DIR}/../utils"
 )
 

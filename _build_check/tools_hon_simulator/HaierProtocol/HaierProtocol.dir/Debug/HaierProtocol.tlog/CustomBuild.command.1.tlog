@@ -1,0 +1,10 @@
+^E:\WORK\GIT\HAIERPROTOCOL\CMAKELISTS.TXT
+setlocal
+"C:\Program Files\CMake\bin\cmake.exe" -SE:/Work/git/HaierProtocol/tools/hon_simulator -BE:/Work/git/HaierProtocol/_build_check/tools_hon_simulator --check-stamp-file E:/Work/git/HaierProtocol/_build_check/tools_hon_simulator/HaierProtocol/CMakeFiles/generate.stamp
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal & call :cmErrorLevel %errorlevel% & goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd

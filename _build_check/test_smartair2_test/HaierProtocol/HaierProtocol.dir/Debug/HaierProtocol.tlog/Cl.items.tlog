@@ -1,0 +1,9 @@
+E:\Work\git\HaierProtocol\tools\utils\console_log.cpp;E:\Work\git\HaierProtocol\_build_check\test_smartair2_test\HaierProtocol\HaierProtocol.dir\Debug\console_log.obj
+E:\Work\git\HaierProtocol\tools\utils\smartair2_server.cpp;E:\Work\git\HaierProtocol\_build_check\test_smartair2_test\HaierProtocol\HaierProtocol.dir\Debug\smartair2_server.obj
+E:\Work\git\HaierProtocol\test\utils\virtual_stream.cpp;E:\Work\git\HaierProtocol\_build_check\test_smartair2_test\HaierProtocol\HaierProtocol.dir\Debug\virtual_stream.obj
+E:\Work\git\HaierProtocol\test\smartair2_test\main.cpp;E:\Work\git\HaierProtocol\_build_check\test_smartair2_test\HaierProtocol\HaierProtocol.dir\Debug\main.obj
+E:\Work\git\HaierProtocol\src\protocol\haier_message.cpp;E:\Work\git\HaierProtocol\_build_check\test_smartair2_test\HaierProtocol\HaierProtocol.dir\Debug\haier_message.obj
+E:\Work\git\HaierProtocol\src\protocol\haier_protocol.cpp;E:\Work\git\HaierProtocol\_build_check\test_smartair2_test\HaierProtocol\HaierProtocol.dir\Debug\haier_protocol.obj
+E:\Work\git\HaierProtocol\src\transport\haier_frame.cpp;E:\Work\git\HaierProtocol\_build_check\test_smartair2_test\HaierProtocol\HaierProtocol.dir\Debug\haier_frame.obj
+E:\Work\git\HaierProtocol\src\transport\protocol_transport.cpp;E:\Work\git\HaierProtocol\_build_check\test_smartair2_test\HaierProtocol\HaierProtocol.dir\Debug\protocol_transport.obj
+E:\Work\git\HaierProtocol\src\utils\haier_log.cpp;E:\Work\git\HaierProtocol\_build_check\test_smartair2_test\HaierProtocol\HaierProtocol.dir\Debug\haier_log.obj

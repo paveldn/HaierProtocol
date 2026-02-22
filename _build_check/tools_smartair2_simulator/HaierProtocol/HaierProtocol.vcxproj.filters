@@ -1,0 +1,60 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="17.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <ClCompile Include="E:\Work\git\HaierProtocol\src\protocol\haier_message.cpp">
+      <Filter>protocol</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\Work\git\HaierProtocol\src\protocol\haier_protocol.cpp">
+      <Filter>protocol</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\Work\git\HaierProtocol\src\transport\haier_frame.cpp">
+      <Filter>transport</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\Work\git\HaierProtocol\src\transport\protocol_transport.cpp">
+      <Filter>transport</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\Work\git\HaierProtocol\src\utils\haier_log.cpp">
+      <Filter>utils</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="E:\Work\git\HaierProtocol\src\protocol\haier_frame_types.h">
+      <Filter>protocol</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Work\git\HaierProtocol\src\protocol\haier_message.h">
+      <Filter>protocol</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Work\git\HaierProtocol\src\protocol\haier_protocol.h">
+      <Filter>protocol</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Work\git\HaierProtocol\src\transport\haier_frame.h">
+      <Filter>transport</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Work\git\HaierProtocol\src\transport\protocol_transport.h">
+      <Filter>transport</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Work\git\HaierProtocol\src\utils\circular_buffer.h">
+      <Filter>utils</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Work\git\HaierProtocol\src\utils\haier_log.h">
+      <Filter>utils</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Work\git\HaierProtocol\src\utils\protocol_stream.h">
+      <Filter>utils</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <CustomBuild Include="E:\Work\git\HaierProtocol\CMakeLists.txt" />
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="protocol">
+      <UniqueIdentifier>{4DC9D09D-9568-3A94-A276-EFB2017CCFA0}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="transport">
+      <UniqueIdentifier>{05E04C95-06C2-376C-A4EB-F19C20F6300D}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="utils">
+      <UniqueIdentifier>{85FBC943-9BDB-388C-BCD9-E174BE8D3131}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+</Project>

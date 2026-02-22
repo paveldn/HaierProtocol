@@ -1,0 +1,10 @@
+^E:\WORK\GIT\HAIERPROTOCOL\_BUILD_CHECK\TOOLS_SMARTAIR2_SIMULATOR\CMAKEFILES\339083DA13DADFB12884BE4842DBD1A0\GENERATE.STAMP.RULE
+setlocal
+"C:\Program Files\CMake\bin\cmake.exe" -SE:/Work/git/HaierProtocol/tools/smartair2_simulator -BE:/Work/git/HaierProtocol/_build_check/tools_smartair2_simulator --check-stamp-list CMakeFiles/generate.stamp.list --vs-solution-file E:/Work/git/HaierProtocol/_build_check/tools_smartair2_simulator/smartair2_simulator.sln
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal & call :cmErrorLevel %errorlevel% & goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd

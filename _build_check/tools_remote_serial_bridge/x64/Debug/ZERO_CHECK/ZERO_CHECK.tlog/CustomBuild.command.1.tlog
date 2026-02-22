@@ -1,0 +1,10 @@
+^E:\WORK\GIT\HAIERPROTOCOL\_BUILD_CHECK\TOOLS_REMOTE_SERIAL_BRIDGE\CMAKEFILES\1DA66A4287AC4B77AB91197022D7896A\GENERATE.STAMP.RULE
+setlocal
+"C:\Program Files\CMake\bin\cmake.exe" -SE:/Work/git/HaierProtocol/tools/remote_serial_bridge -BE:/Work/git/HaierProtocol/_build_check/tools_remote_serial_bridge --check-stamp-list CMakeFiles/generate.stamp.list --vs-solution-file E:/Work/git/HaierProtocol/_build_check/tools_remote_serial_bridge/remote_serial_bridge.sln
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal & call :cmErrorLevel %errorlevel% & goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd

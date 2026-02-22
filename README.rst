@@ -5,8 +5,32 @@ This library implements a Haier protocol transport level. It can help
 with sending and receiving messages to appliances that support it and
 process answers.
 
+Compatibility
+-------------
+
+This library is compatible with both **PlatformIO** and **Arduino** toolchains.
+
+- Existing include paths stay unchanged (for example ``"protocol/haier_protocol.h"``).
+- Public headers are located in the ``src`` tree (the ``include`` tree is no longer used).
+- For Arduino IDE/CLI, you can also include the main header:
+
+  .. code-block:: cpp
+
+    #include <HaierProtocol.h>
+
+No migration is required for existing PlatformIO projects.
+
+Documentation
+-------------
+
+- `Protocol reference <doc/protocol_reference.rst>`_
+- `PlatformIO usage example <doc/usage_platformio.rst>`_
+- `Arduino usage example <doc/usage_arduino.rst>`_
+
 Protocol description
 --------------------
+
+Detailed reference: `HaierProtocol Reference <doc/protocol_reference.rst>`_
 
 Haier protocol is a synchronous protocol. All data delivered with this
 protocol is split into portions - frames. The protocol has two versions.

@@ -1,0 +1,13 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="17.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <CustomBuild Include="E:\Work\git\HaierProtocol\_build_check\tools_hon_simulator\CMakeFiles\147559f3bb65ad01220f99cf6a0147dc\generate.stamp.rule">
+      <Filter>CMake Rules</Filter>
+    </CustomBuild>
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="CMake Rules">
+      <UniqueIdentifier>{CE346E25-4760-3786-A87B-8AAC4334BC78}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+</Project>

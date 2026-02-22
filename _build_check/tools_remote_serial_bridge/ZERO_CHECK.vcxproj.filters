@@ -1,0 +1,13 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="17.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <CustomBuild Include="E:\Work\git\HaierProtocol\_build_check\tools_remote_serial_bridge\CMakeFiles\1da66a4287ac4b77ab91197022d7896a\generate.stamp.rule">
+      <Filter>CMake Rules</Filter>
+    </CustomBuild>
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="CMake Rules">
+      <UniqueIdentifier>{930A6F68-46D6-314E-A29D-3EC1FA486B43}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+</Project>

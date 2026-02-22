@@ -10,7 +10,7 @@ set(TOOLS_PATH "${CMAKE_CURRENT_SOURCE_DIR}/../../tools")
 add_compile_options(-DHAIER_LOG_LEVEL=5)
 add_compile_options(-DRUN_ALL_TESTS)
 
-include_directories("${LIB_ROOT}/include" "${CMAKE_CURRENT_SOURCE_DIR}/../utils" "${TOOLS_PATH}/utils")
+include_directories("${LIB_ROOT}/src" "${CMAKE_CURRENT_SOURCE_DIR}/../utils" "${TOOLS_PATH}/utils")
 
 list(APPEND SOURCE_FILES "${TOOLS_PATH}/utils/console_log.cpp")
 list(APPEND SOURCE_FILES "${TOOLS_PATH}/utils/hon_server.cpp")

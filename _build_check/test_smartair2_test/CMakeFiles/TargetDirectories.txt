@@ -1,0 +1,5 @@
+E:/Work/git/HaierProtocol/_build_check/test_smartair2_test/CMakeFiles/smartair2_test.dir
+E:/Work/git/HaierProtocol/_build_check/test_smartair2_test/CMakeFiles/ALL_BUILD.dir
+E:/Work/git/HaierProtocol/_build_check/test_smartair2_test/CMakeFiles/ZERO_CHECK.dir
+E:/Work/git/HaierProtocol/_build_check/test_smartair2_test/HaierProtocol/CMakeFiles/HaierProtocol.dir
+E:/Work/git/HaierProtocol/_build_check/test_smartair2_test/HaierProtocol/CMakeFiles/ALL_BUILD.dir
