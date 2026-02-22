@@ -5,8 +5,48 @@ This library implements a Haier protocol transport level. It can help
 with sending and receiving messages to appliances that support it and
 process answers.
 
+Compatibility
+-------------
+
+This library is compatible with both **PlatformIO** and **Arduino** toolchains.
+
+- Existing include paths stay unchanged (for example ``"protocol/haier_protocol.h"``).
+- Public headers are located in the ``src`` tree (the ``include`` tree is no longer used).
+- For Arduino IDE/CLI, you can also include the main header:
+
+Note on C++ standard library support
+----------------------------------
+
+This library uses C++ timing facilities (``std::chrono``). It requires a
+toolchain and board core that provide the C++ standard library. Older or
+constrained Arduino cores (for example some AVR/Uno toolchains) may not
+provide ``<chrono>`` and will fail to compile. For these boards prefer
+PlatformIO or newer Arduino cores that include full C++ support.
+
+If you target constrained boards, see the Arduino usage documentation for
+workarounds and recommended cores.
+
+- For Arduino IDE/CLI, you can also include the main header:
+
+  .. code-block:: cpp
+
+    #include <HaierProtocol.h>
+
+No migration is required for existing PlatformIO projects.
+
+Documentation
+-------------
+
+- `Protocol reference <doc/protocol_reference.rst>`_
+- `PlatformIO usage example <doc/usage_platformio.rst>`_
+- `Arduino usage example <doc/usage_arduino.rst>`_
+- `hOn simulator <doc/hon_simulator.rst>`_
+- `SmartAir2 simulator <doc/smartair2_simulator.rst>`_
+
 Protocol description
 --------------------
+
+Detailed reference: `HaierProtocol Reference <doc/protocol_reference.rst>`_
 
 Haier protocol is a synchronous protocol. All data delivered with this
 protocol is split into portions - frames. The protocol has two versions.

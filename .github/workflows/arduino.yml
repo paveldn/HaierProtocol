@@ -1,0 +1,30 @@
+name: Arduino CLI Build
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Arduino CLI
+        uses: arduino/setup-arduino-cli@v1
+      - name: Add ESP32 core index and install latest esp32 core
+        run: |
+          # Add ESP32 core index and install the latest available esp32 core
+          arduino-cli core update-index --additional-urls https://raw.githubusercontent.com/espressif/arduino-esp32/gh-pages/package_esp32_index.json
+          arduino-cli core install esp32:esp32
+      - name: Install local library into Arduino sketchbook libraries
+        run: |
+          mkdir -p "$HOME/Arduino/libraries/HaierProtocol"
+          cp -R "$GITHUB_WORKSPACE"/* "$HOME/Arduino/libraries/HaierProtocol/"
+          echo "Installed local library to $HOME/Arduino/libraries/HaierProtocol"
+      - name: List Arduino CLI libraries (debug)
+        run: |
+          arduino-cli lib list || true
+      - name: Compile Arduino example
+        working-directory: test/ci/arduino_example
+        run: |
+          arduino-cli compile --fqbn esp32:esp32:esp32 .

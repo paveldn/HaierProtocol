@@ -1,0 +1,20 @@
+name: PlatformIO Build
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.x'
+      - name: Install PlatformIO
+        run: pip install -U platformio
+      - name: Build PlatformIO example
+        working-directory: test/ci/platformio_example
+        run: pio run -e esp32dev --verbose

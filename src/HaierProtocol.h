@@ -1,0 +1,6 @@
+#ifndef HAIER_PROTOCOL_ARDUINO_MAIN_HEADER_H
+#define HAIER_PROTOCOL_ARDUINO_MAIN_HEADER_H
+
+#include "protocol/haier_protocol.h"
+
+#endif // HAIER_PROTOCOL_ARDUINO_MAIN_HEADER_H
