@@ -261,9 +261,11 @@ size_t HaierFrame::parse_buffer(const uint8_t* const buffer, size_t size, FrameE
     }
     size_t rpos = min_size - 1;
     uint16_t crc = INITIAL_CRC;
+    // Use a local counter so a failed attempt doesn't change the frame state and parsing can be retried
+    uint8_t additional_bytes = this->additional_bytes_;
     for (size_t i = 0; i < data_size_; i++)
       if (buffer[i] == SEPARATOR_BYTE)
-        ++this->additional_bytes_;
+        ++additional_bytes;
     if (this->use_crc_)
     {
       uint16_t frame_crc = buffer[rpos] + (buffer[rpos - 1] << 8);
@@ -275,12 +277,13 @@ size_t HaierFrame::parse_buffer(const uint8_t* const buffer, size_t size, FrameE
       }
       rpos -= 2;
     }
-    uint8_t chk = checksum(buffer + lpos, this->data_size_, this->checksum_) + ((this->additional_bytes_ * SEPARATOR_POST_BYTE) & 0xFF);
+    uint8_t chk = checksum(buffer + lpos, this->data_size_, this->checksum_) + ((additional_bytes * SEPARATOR_POST_BYTE) & 0xFF);
     if (chk != buffer[rpos])
     {
       err = FrameError::CHECKSUM_WRONG;
       return lpos;
     }
+    this->additional_bytes_ = additional_bytes;
     this->crc_ = crc;
     this->checksum_ = chk;
     this->status_ = FrameStatus::FRAME_COMPLETE;

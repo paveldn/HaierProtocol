@@ -49,6 +49,50 @@ void TestStream::addBuffer(uint8_t* buf, size_t size)
     mBuffer.push(buf, size);
 }
 
+// Feeds a buffer to the transport, either at once or byte by byte (to simulate data arriving
+// slowly from the UART), and returns how many frames were found. Found frames are discarded.
+static size_t feed_and_count_frames(TestStream& stream, haier_protocol::TransportLevelHandler& transport,
+                                    const uint8_t* buf, size_t size, bool byte_by_byte)
+{
+    if (byte_by_byte)
+    {
+        for (size_t i = 0; i < size; i++)
+        {
+            stream.addByte(buf[i]);
+            transport.read_data();
+            transport.process_data();
+        }
+    }
+    else
+    {
+        stream.addBuffer(const_cast<uint8_t*>(buf), size);
+        transport.read_data();
+        transport.process_data();
+    }
+    size_t frames = 0;
+    haier_protocol::TimestampedFrame tsframe;
+    while (transport.pop(tsframe))
+        ++frames;
+    return frames;
+}
+
+// Status answer used as the "next frame" after the frame under test, to make sure the frame
+// under test doesn't swallow the beginning of the following one.
+static const uint8_t NEXT_FRAME[] = { 0xFF, 0xFF, 0x0A, 0x40, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0x4D, 0x01, 0x99, 0xB3, 0xB4 };
+
+static void check_frames(TestStream& stream, haier_protocol::TransportLevelHandler& transport,
+                         const uint8_t* frame, size_t size, size_t expected_frames)
+{
+    for (int byte_by_byte = 0; byte_by_byte < 2; byte_by_byte++)
+    {
+        size_t frames = feed_and_count_frames(stream, transport, frame, size, byte_by_byte != 0);
+        frames += feed_and_count_frames(stream, transport, NEXT_FRAME, sizeof(NEXT_FRAME), byte_by_byte != 0);
+        if (frames != expected_frames + 1)
+            HAIER_LOGE("Expected %u frames, got %u (%s)", (unsigned) expected_frames + 1, (unsigned) frames,
+                       byte_by_byte ? "byte by byte" : "single chunk");
+    }
+}
+
 int main()
 {
     haier_protocol::set_log_handler(console_logger);
@@ -155,6 +199,106 @@ int main()
         if (buf_size != 2 + haier_protocol::FRAME_HEADER_SIZE + sizeof(buffer) + 1 + 2)
             HAIER_LOGE("Buffers don't match!");
         TEST_END(0, 0);
+    }
+#endif
+#if defined(RUN_ALL_TESTS) || defined(RUN_TEST9)
+    {
+        // Real status answer from a Haier AD71S2SS1FA(H) (hOn, E++2.18): CRC is 0xFF49 and the
+        // device sends it without the 0x55 post separator byte
+        TEST_START(9);
+        const uint8_t buffer[] = { 0xFF, 0xFF, 0x32, 0x40, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0x6D, 0x01, 0x06, 0x0A, 0x81, 0x00, 0x02, 0x00, 0x14, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x03, 0x03, 0x03, 0x2A, 0x32, 0x56, 0x00, 0x00, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x4C, 0xFF, 0x49 };
+        check_frames(stream, transport, buffer, sizeof(buffer), 1);
+        TEST_END(0, 0);
+    }
+#endif
+#if defined(RUN_ALL_TESTS) || defined(RUN_TEST10)
+    {
+        // CRC high byte 0xFF, escaped
+        TEST_START(10);
+        const uint8_t buffer[] = { 0xFF, 0xFF, 0x0D, 0x40, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0x4D, 0x01, 0x02, 0x00, 0x96, 0x34, 0xFF, 0x55, 0x1F };
+        check_frames(stream, transport, buffer, sizeof(buffer), 1);
+        TEST_END(0, 0);
+    }
+#endif
+#if defined(RUN_ALL_TESTS) || defined(RUN_TEST11)
+    {
+        // CRC high byte 0xFF, not escaped
+        TEST_START(11);
+        const uint8_t buffer[] = { 0xFF, 0xFF, 0x0D, 0x40, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0x4D, 0x01, 0x02, 0x00, 0x96, 0x34, 0xFF, 0x1F };
+        check_frames(stream, transport, buffer, sizeof(buffer), 1);
+        TEST_END(0, 0);
+    }
+#endif
+#if defined(RUN_ALL_TESTS) || defined(RUN_TEST12)
+    {
+        // CRC low byte 0xFF, escaped
+        TEST_START(12);
+        const uint8_t buffer[] = { 0xFF, 0xFF, 0x0D, 0x40, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0x4D, 0x01, 0x02, 0x7C, 0x03, 0x1D, 0x50, 0xFF, 0x55 };
+        check_frames(stream, transport, buffer, sizeof(buffer), 1);
+        TEST_END(0, 0);
+    }
+#endif
+#if defined(RUN_ALL_TESTS) || defined(RUN_TEST13)
+    {
+        // CRC low byte 0xFF, not escaped
+        TEST_START(13);
+        const uint8_t buffer[] = { 0xFF, 0xFF, 0x0D, 0x40, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0x4D, 0x01, 0x02, 0x7C, 0x03, 0x1D, 0x50, 0xFF };
+        check_frames(stream, transport, buffer, sizeof(buffer), 1);
+        TEST_END(0, 0);
+    }
+#endif
+#if defined(RUN_ALL_TESTS) || defined(RUN_TEST14)
+    {
+        // CRC 0xFFFF, escaped
+        TEST_START(14);
+        const uint8_t buffer[] = { 0xFF, 0xFF, 0x0D, 0x40, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0x4D, 0x01, 0x02, 0x7F, 0xD7, 0xF4, 0xFF, 0x55, 0xFF, 0x55 };
+        check_frames(stream, transport, buffer, sizeof(buffer), 1);
+        TEST_END(0, 0);
+    }
+#endif
+#if defined(RUN_ALL_TESTS) || defined(RUN_TEST15)
+    {
+        // CRC 0xFFFF, not escaped
+        TEST_START(15);
+        const uint8_t buffer[] = { 0xFF, 0xFF, 0x0D, 0x40, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0x4D, 0x01, 0x02, 0x7F, 0xD7, 0xF4, 0xFF, 0xFF };
+        check_frames(stream, transport, buffer, sizeof(buffer), 1);
+        TEST_END(0, 0);
+    }
+#endif
+#if defined(RUN_ALL_TESTS) || defined(RUN_TEST16)
+    {
+        // CRC 0xFF55 (ambiguous), escaped
+        TEST_START(16);
+        const uint8_t buffer[] = { 0xFF, 0xFF, 0x0D, 0x40, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0x4D, 0x01, 0x02, 0xE7, 0xD6, 0x5B, 0xFF, 0x55, 0x55 };
+        check_frames(stream, transport, buffer, sizeof(buffer), 1);
+        TEST_END(0, 0);
+    }
+#endif
+#if defined(RUN_ALL_TESTS) || defined(RUN_TEST17)
+    {
+        // CRC 0xFF55 (ambiguous), not escaped
+        TEST_START(17);
+        const uint8_t buffer[] = { 0xFF, 0xFF, 0x0D, 0x40, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0x4D, 0x01, 0x02, 0xE7, 0xD6, 0x5B, 0xFF, 0x55 };
+        check_frames(stream, transport, buffer, sizeof(buffer), 1);
+        TEST_END(0, 0);
+    }
+#endif
+#if defined(RUN_ALL_TESTS) || defined(RUN_TEST18)
+    {
+        // Wrong CRC must still be reported (once per pass) and must not break the next frame
+        TEST_START(18);
+        const uint8_t buffer[] = { 0xFF, 0xFF, 0x0D, 0x40, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0x4D, 0x01, 0x02, 0x00, 0x96, 0x34, 0x12, 0x34 };
+        check_frames(stream, transport, buffer, sizeof(buffer), 0);
+        TEST_END(2, 0);
+    }
+#endif
+#if defined(RUN_ALL_TESTS) || defined(RUN_TEST19)
+    {
+        // Unescaped 0xFF in the data is still an error (only CRC is relaxed)
+        TEST_START(19);
+        const uint8_t buffer[] = { 0xFF, 0xFF, 0x0D, 0x40, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0x4D, 0x01, 0xFF, 0xBB, 0xFF, 0x55, 0xFF, 0x55, 0xD1, 0x3C };
+        check_frames(stream, transport, buffer, sizeof(buffer), 0);
+        TEST_END(2, 0);
     }
 #endif
     HAIER_LOGI("All tests successfully finished!");

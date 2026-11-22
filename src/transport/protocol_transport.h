@@ -36,6 +36,7 @@ public:
 protected:
 	void clear_();
 	void drop_bytes_(size_t size);
+	FrameError parse_frame_body_(size_t raw_size, size_t& consumed);
 	ProtocolStream&                 stream_;
 	CircularBuffer<uint8_t>         buffer_;
 	size_t                          pos_;

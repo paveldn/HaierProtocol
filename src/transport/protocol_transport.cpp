@@ -181,24 +181,14 @@ void TransportLevelHandler::process_data()
         }
         break;
         case FrameStatus::FRAME_HEADER_ONLY:
-          if (this->pos_ + 1 - this->sep_count_ == this->current_frame_.get_data_size() + (this->current_frame_.get_use_crc() ? 3 : 1))
+          if (this->pos_ + 1 >= (size_t) this->current_frame_.get_data_size() + (this->current_frame_.get_use_crc() ? 3 : 1))
           {
-            std::unique_ptr<uint8_t[]> tmp_buf(new uint8_t[pos_ + 1 - sep_count_]);
-            size_t hPos = 0;
+            // Enough bytes for the shortest possible encoding of the frame body, try to parse it
             size_t bPos = 0;
-            bool correctFrame = true;
-            while (bPos <= this->pos_)
-            {
-              if ((bPos == 0) || (this->buffer_[bPos - 1] != SEPARATOR_BYTE))
-                tmp_buf.get()[hPos++] = this->buffer_[bPos];
-              else if (this->buffer_[bPos] != SEPARATOR_POST_BYTE)
-              {
-                correctFrame = false;
-                break;
-              }
-              ++bPos;
-            }
-            if (!correctFrame)
+            FrameError err = this->parse_frame_body_(this->pos_ + 1, bPos);
+            if (err == FrameError::DATA_SIZE_WRONG)
+              break; // Frame is not complete yet, waiting for more data
+            if (err == FrameError::WRONG_POST_SEPARATOR_BYTE)
             {
               HAIER_LOGW("Frame parsing error: %d", FrameError::WRONG_POST_SEPARATOR_BYTE);
               this->buffer_.drop(bPos - 1);
@@ -210,8 +200,6 @@ void TransportLevelHandler::process_data()
               continue;
             }
             this->buffer_.drop(bPos);
-            FrameError err;
-            this->current_frame_.parse_buffer(tmp_buf.get(), hPos, err);
             if (err == FrameError::COMPLETE_FRAME)
             {
 #if (HAIER_LOG_LEVEL > 3)
@@ -220,7 +208,7 @@ void TransportLevelHandler::process_data()
               const char *_p = hex_map + (_frameType * 2);
               _header[18] = _p[0];
               _header[19] = _p[1];
-              HAIER_BUFD(_header, tmp_buf.get(), this->current_frame_.get_data_size());
+              HAIER_BUFD(_header, this->current_frame_.get_data(), this->current_frame_.get_data_size());
 #endif
               this->incoming_queue_.push(TimestampedFrame{std::move(this->current_frame_), frame_start_});
             }
@@ -253,6 +241,88 @@ void TransportLevelHandler::process_data()
       bytes_to_drop = 0;
     }
   }
+}
+
+FrameError TransportLevelHandler::parse_frame_body_(size_t raw_size, size_t &consumed)
+{
+  // Frame body is: <data> <checksum> [CRC high] [CRC low]
+  // In data and checksum every 0xFF byte must be followed by 0x55 (post separator byte).
+  // Some devices (for example hOn AC with protocol E++2.18) don't add the post separator
+  // byte to the CRC, so for CRC both encodings are accepted, the CRC value itself is used
+  // to decide which one was used.
+  const bool use_crc = this->current_frame_.get_use_crc();
+  const size_t escaped_size = this->current_frame_.get_data_size() + 1;
+  const size_t body_size = escaped_size + (use_crc ? 2 : 0);
+  std::unique_ptr<uint8_t[]> body(new uint8_t[body_size]);
+  size_t lpos = 0;
+  size_t rpos = 0;
+  consumed = 0;
+  while (lpos < escaped_size)
+  {
+    if (rpos >= raw_size)
+      return FrameError::DATA_SIZE_WRONG;
+    const uint8_t val = this->buffer_[rpos++];
+    if (val == SEPARATOR_BYTE)
+    {
+      if (rpos >= raw_size)
+        return FrameError::DATA_SIZE_WRONG;
+      if (this->buffer_[rpos] != SEPARATOR_POST_BYTE)
+      {
+        consumed = rpos;
+        return FrameError::WRONG_POST_SEPARATOR_BYTE;
+      }
+      ++rpos;
+    }
+    body.get()[lpos++] = val;
+  }
+  FrameError err;
+  if (!use_crc)
+  {
+    consumed = rpos;
+    this->current_frame_.parse_buffer(body.get(), body_size, err);
+    return err;
+  }
+  // CRC: try escaped encoding first (canonical), then not escaped
+  FrameError result = FrameError::CRC_WRONG;
+  bool incomplete = false;
+  for (int escaped = 1; escaped >= 0; --escaped)
+  {
+    size_t pos = rpos;
+    if (pos >= raw_size)
+      return FrameError::DATA_SIZE_WRONG;
+    const uint8_t crc_high = this->buffer_[pos++];
+    if (escaped)
+    {
+      if (crc_high != SEPARATOR_BYTE)
+        continue; // No difference between encodings, check only one of them
+      if (pos >= raw_size)
+      {
+        incomplete = true;
+        continue;
+      }
+      if (this->buffer_[pos] != SEPARATOR_POST_BYTE)
+        continue;
+      ++pos;
+    }
+    if (pos >= raw_size)
+    {
+      incomplete = true;
+      continue;
+    }
+    const uint8_t crc_low = this->buffer_[pos++];
+    // If CRC low byte is 0xFF and post separator byte is already here consume it too.
+    // If it is not here yet it will be dropped as garbage when it arrives.
+    if ((crc_low == SEPARATOR_BYTE) && (pos < raw_size) && (this->buffer_[pos] == SEPARATOR_POST_BYTE))
+      ++pos;
+    body.get()[escaped_size] = crc_high;
+    body.get()[escaped_size + 1] = crc_low;
+    this->current_frame_.parse_buffer(body.get(), body_size, err);
+    consumed = pos;
+    if (err == FrameError::COMPLETE_FRAME)
+      return err;
+    result = err;
+  }
+  return incomplete ? FrameError::DATA_SIZE_WRONG : result;
 }
 
 void TransportLevelHandler::reset_protocol() noexcept
